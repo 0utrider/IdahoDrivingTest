@@ -8,7 +8,7 @@ Teaching a teen to drive is terrifying enough - studying for the test shouldn't 
 
 
 > [!WARNING]
-> ⚠️ Disclaimer for Fellow Parents:
+> **Disclaimer for Fellow Parents:**
 >
 > This tool can help your teen pass the written permit test. However, **I cannot help you survive the actual behind-the-wheel driving instruction.** White knuckles, phantom passenger-side braking, and silent prayers in church parking lots are, unfortunately, entirely on you. **Godspeed.** 🫡
 
