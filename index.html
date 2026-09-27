@@ -1,635 +1,731 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Idaho Driver's License Practice Test</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --success: #10b981;
-      --danger: #ef4444;
-      --accent: #e2e8f0;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 540px;
-      margin: auto;
-      padding-bottom: 40px;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    header h1 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    header p {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .progress-bar-container {
-      width: 100%;
-      background-color: var(--border);
-      height: 8px;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background-color: var(--primary);
-      transition: width 0.3s ease;
-    }
-
-    .card {
-      background-color: var(--card-bg);
-      border-radius: 12px;
-      padding: 20px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-    }
-
-    .meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .question-text {
-      font-size: 1.05rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: var(--accent);
-    }
-
-    .options {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .option-btn {
-      background-color: #273549;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 14px 16px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      text-align: left;
-      cursor: pointer;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      transition: all 0.15s ease;
-      touch-action: manipulation;
-    }
-
-    .option-btn:active {
-      transform: scale(0.98);
-    }
-
-    .option-btn .label {
-      background-color: var(--border);
-      color: var(--text-muted);
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      font-size: 0.75rem;
-      flex-shrink: 0;
-      font-weight: 700;
-    }
-
-    .option-btn.correct {
-      background-color: rgba(16, 185, 129, 0.2);
-      border-color: var(--success);
-      color: #a7f3d0;
-    }
-
-    .option-btn.correct .label {
-      background-color: var(--success);
-      color: #fff;
-    }
-
-    .option-btn.wrong {
-      background-color: rgba(239, 68, 68, 0.2);
-      border-color: var(--danger);
-      color: #fecaca;
-    }
-
-    .option-btn.wrong .label {
-      background-color: var(--danger);
-      color: #fff;
-    }
-
-    .feedback {
-      margin-top: 20px;
-      padding: 14px;
-      border-radius: 8px;
-      display: none;
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
-
-    .feedback.correct {
-      background-color: rgba(16, 185, 129, 0.15);
-      border: 1px solid var(--success);
-      color: #6ee7b7;
-    }
-
-    .feedback.wrong {
-      background-color: rgba(239, 68, 68, 0.15);
-      border: 1px solid var(--danger);
-      color: #fca5a5;
-    }
-
-    .feedback-title {
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .controls {
-      margin-top: 20px;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .btn {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: none;
-      touch-action: manipulation;
-    }
-
-    .btn:active {
-      background-color: var(--primary-hover);
-    }
-
-    .results-screen {
-      display: none;
-      text-align: center;
-    }
-
-    .results-screen h2 {
-      font-size: 1.5rem;
-      margin-bottom: 8px;
-    }
-
-    .score-circle {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      border: 4px solid var(--primary);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      margin: 24px auto;
-    }
-
-    .score-circle .pct {
-      font-size: 1.6rem;
-      font-weight: 700;
-    }
-
-    .score-circle .detail {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .pass-tag {
-      display: inline-block;
-      padding: 6px 16px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      margin-bottom: 16px;
-    }
-
-    .pass-tag.pass {
-      background-color: rgba(16, 185, 129, 0.2);
-      color: var(--success);
-      border: 1px solid var(--success);
-    }
-
-    .pass-tag.fail {
-      background-color: rgba(239, 68, 68, 0.2);
-      color: var(--danger);
-      border: 1px solid var(--danger);
-    }
-
-    .restart-btn {
-      width: 100%;
-      margin-top: 16px;
-      padding: 14px;
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Idaho Driver's License Practice Test</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --success: #10b981;
+  --danger: #ef4444;
+  --accent: #e2e8f0;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+.container {
+  width: 100%;
+  max-width: 540px;
+  margin: auto;
+  padding-bottom: 40px;
+}
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+header p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.progress-bar-container {
+  width: 100%;
+  background-color: var(--border);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background-color: var(--primary);
+  transition: width 0.3s ease;
+}
+.card {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+.meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.question-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.option-btn {
+  background-color: #273549;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+.option-btn:active {
+  transform: scale(0.98);
+}
+.option-btn .label {
+  background-color: var(--border);
+  color: var(--text-muted);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.option-btn.correct {
+  background-color: rgba(16, 185, 129, 0.2);
+  border-color: var(--success);
+  color: #a7f3d0;
+}
+.option-btn.correct .label {
+  background-color: var(--success);
+  color: #fff;
+}
+.option-btn.wrong {
+  background-color: rgba(239, 68, 68, 0.2);
+  border-color: var(--danger);
+  color: #fecaca;
+}
+.option-btn.wrong .label {
+  background-color: var(--danger);
+  color: #fff;
+}
+.feedback {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 8px;
+  display: none;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.feedback.correct {
+  background-color: rgba(16, 185, 129, 0.15);
+  border: 1px solid var(--success);
+  color: #6ee7b7;
+}
+.feedback.wrong {
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 1px solid var(--danger);
+  color: #fca5a5;
+}
+.feedback-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.controls {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+.btn {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: none;
+  touch-action: manipulation;
+}
+.btn:active {
+  background-color: var(--primary-hover);
+}
+.results-screen {
+  display: none;
+  text-align: center;
+}
+.results-screen h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid var(--primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 24px auto;
+}
+.score-circle .pct {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.score-circle .detail {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.pass-tag {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+.pass-tag.pass {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+.pass-tag.fail {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.restart-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+</style>
 </head>
 <body>
-
 <div class="container">
-  <header>
-    <h1>Idaho Knowledge Test Prep</h1>
-    <p>Randomized pool based on the Idaho Driver's Handbook</p>
-  </header>
-
-  <div class="progress-bar-container" id="progressContainer">
-    <div class="progress-bar" id="progressBar"></div>
-  </div>
-
-  <div class="card" id="quizCard">
-    <div class="meta">
-      <span id="questionNum">Question 1 of 20</span>
-      <span id="currentScore">Score: 0/0</span>
-    </div>
-    
-    <div class="question-text" id="questionText">Loading question...</div>
-    
-    <div class="options" id="optionsContainer"></div>
-
-    <div class="feedback" id="feedback">
-      <div class="feedback-title" id="feedbackTitle"></div>
-      <div id="feedbackText"></div>
-    </div>
-
-    <div class="controls">
-      <button class="btn" id="nextBtn" onclick="nextQuestion()">Next Question</button>
-    </div>
-  </div>
-
-  <div class="card results-screen" id="resultsScreen">
-    <h2>Exam Complete</h2>
-    <div id="statusBadge" class="pass-tag">PASS</div>
-    <div class="score-circle">
-      <div class="pct" id="scorePercent">0%</div>
-      <div class="detail" id="scoreFraction">0 / 0</div>
-    </div>
-    <p id="summaryMessage" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 8px;"></p>
-    <button class="restart-btn" onclick="startQuiz()">Start New Random Test</button>
-  </div>
+<header>
+<h1>Idaho Knowledge Test Prep</h1>
+<p>Randomized pool based on the Idaho Driver's Handbook</p>
+</header>
+<div class="progress-bar-container" id="progressContainer">
+<div class="progress-bar" id="progressBar"></div>
 </div>
-
+<div class="card" id="quizCard">
+<div class="meta">
+<span id="questionNum">Question 1 of 20</span>
+<span id="currentScore">Score: 0/0</span>
+</div>
+<div class="question-text" id="questionText">Loading question...</div>
+<div class="options" id="optionsContainer"></div>
+<div class="feedback" id="feedback">
+<div class="feedback-title" id="feedbackTitle"></div>
+<div id="feedbackText"></div>
+</div>
+<div class="controls">
+<button class="btn" id="nextBtn" onclick="nextQuestion()">Next Question</button>
+</div>
+</div>
+<div class="card results-screen" id="resultsScreen">
+<h2>Exam Complete</h2>
+<div id="statusBadge" class="pass-tag">PASS</div>
+<div class="score-circle">
+<div class="pct" id="scorePercent">0%</div>
+<div class="detail" id="scoreFraction">0 / 0</div>
+</div>
+<p id="summaryMessage" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 8px;"></p>
+<button class="restart-btn" onclick="startQuiz()">Start New Random Test</button>
+</div>
+</div>
 <script>
 const QUESTION_BANK = [
-  {
-    q: "When parallel parking next to a curb or edge of the roadway in Idaho, your vehicle must be within what distance of the curb?",
-    options: ["6 inches", "12 inches", "18 inches", "24 inches"],
-    correct: 2,
-    tip: "Idaho law requires you to park parallel to and within 18 inches of the curb or edge of the roadway. (Handbook pg. 80)"
-  },
-  {
-    q: "What is Idaho's 'Basic Rule' speed law?",
-    options: [
-      "Always drive the exact posted speed limit.",
-      "Drive at a speed that is reasonable and prudent at all times.",
-      "Never drive below 45 mph on any paved highway.",
-      "Stay 5 mph slower than adjacent traffic."
-    ],
-    correct: 1,
-    tip: "Idaho's Basic Rule requires drivers to drive at a speed that is reasonable and prudent for existing road, weather, and traffic conditions. (Handbook pg. 68)"
-  },
-  {
-    q: "When turning or changing lanes, Idaho law requires you to continuously signal for at least how far in business or residential areas?",
-    options: ["50 feet", "100 feet", "200 feet", "300 feet"],
-    correct: 1,
-    tip: "Signals must start at least 100 feet ahead in business/residential areas, or at least 5 seconds before on freeways. (Handbook pg. 72)"
-  },
-  {
-    q: "How far in advance must you signal before changing lanes or exiting on a freeway?",
-    options: ["3 seconds", "5 seconds", "100 feet", "10 seconds"],
-    correct: 1,
-    tip: "On freeways or highways, turn signals must be activated at least 5 seconds before changing lanes or exiting. (Handbook pg. 72, 85)"
-  },
-  {
-    q: "You do NOT have to stop for a school bus with flashing red lights if:",
-    options: [
-      "You are traveling in a rural area.",
-      "The bus is in a turn lane.",
-      "You are traveling in the opposite direction on a highway with four or more lanes (two lanes in each direction).",
-      "You are driving a commercial vehicle."
-    ],
-    correct: 2,
-    tip: "You do not need to stop if traveling in the opposite direction on a highway with four or more lanes (at least two lanes each way). (Handbook pg. 70)"
-  },
-  {
-    q: "When required to stop at a railroad grade crossing, a vehicle must stop within what distance from the nearest rail?",
-    options: [
-      "Within 25 feet but no less than 5 feet",
-      "Within 50 feet but no less than 15 feet",
-      "Within 75 feet but no less than 20 feet",
-      "Within 100 feet but no less than 30 feet"
-    ],
-    correct: 1,
-    tip: "When required to stop at a railroad crossing, stop within 50 feet but no less than 15 feet from the nearest rail. (Handbook pg. 60, 138)"
-  },
-  {
-    q: "What is the minimum recommended following distance under ideal driving conditions in Idaho?",
-    options: ["2 seconds", "3 seconds", "4 seconds", "5 seconds"],
-    correct: 1,
-    tip: "The three-second following distance rule is the minimum recommended safe procedure in Idaho. (Handbook pg. 79)"
-  },
-  {
-    q: "When parking on a hill facing downhill with a curb, which way should you turn your front wheels?",
-    options: [
-      "Straight ahead",
-      "Sharply away from the curb",
-      "Sharply toward and against the curb",
-      "Parallel to the centerline"
-    ],
-    correct: 2,
-    tip: "When parking downhill with a curb, turn your front wheels sharply toward and against the curb. (Handbook pg. 81)"
-  },
-  {
-    q: "When parking uphill on a street that HAS a curb, how should you turn your wheels?",
-    options: [
-      "Sharply away from the curb",
-      "Sharply toward the curb",
-      "Straight ahead",
-      "Toward the shoulder"
-    ],
-    correct: 0,
-    tip: "When parking uphill with a curb, turn your front wheels sharply away and against the curb. (Handbook pg. 81)"
-  },
-  {
-    q: "In Idaho, parking is prohibited within how many feet of a fire hydrant?",
-    options: ["10 feet", "15 feet", "20 feet", "30 feet"],
-    correct: 1,
-    tip: "Parking is prohibited within 15 feet of a fire hydrant. (Handbook pg. 81)"
-  },
-  {
-    q: "Parking is prohibited within how many feet of a stop sign, yield sign, or traffic signal?",
-    options: ["15 feet", "20 feet", "25 feet", "30 feet"],
-    correct: 3,
-    tip: "Parking is illegal within 30 feet of any stop sign, yield sign, or traffic signal. (Handbook pg. 81)"
-  },
-  {
-    q: "Parking is prohibited within how many feet of a crosswalk?",
-    options: ["15 feet", "20 feet", "30 feet", "50 feet"],
-    correct: 1,
-    tip: "Parking is illegal within 20 feet of a crosswalk at an intersection. (Handbook pg. 81)"
-  },
-  {
-    q: "When passing another vehicle on a two-lane road, you must complete the pass before coming within how many feet of oncoming traffic?",
-    options: ["100 feet", "150 feet", "200 feet", "400 feet"],
-    correct: 2,
-    tip: "You must complete the pass and return to your lane before coming within 200 feet of oncoming traffic. (Handbook pg. 78)"
-  },
-  {
-    q: "Passing is strictly prohibited within how many feet of an intersection or railroad crossing?",
-    options: ["50 feet", "100 feet", "150 feet", "200 feet"],
-    correct: 1,
-    tip: "Passing is prohibited within 100 feet of an intersection or railroad grade crossing. (Handbook pg. 76)"
-  },
-  {
-    q: "On a two-lane highway with a posted limit of 55 mph or higher, how much may a passenger car exceed the speed limit when passing a slower vehicle?",
-    options: [
-      "You cannot exceed the speed limit at all",
-      "Up to 5 mph",
-      "Up to 10 mph",
-      "Up to 15 mph"
-    ],
-    correct: 3,
-    tip: "Idaho allows passenger vehicles/pickups (not towing) to exceed the speed limit by up to 15 mph to pass on 2-lane roads posted at 55 mph or more. (Handbook pg. 77)"
-  },
-  {
-    q: "You must dim your high-beam headlights within _____ feet of meeting an oncoming vehicle and _____ feet of overtaking another vehicle.",
-    options: [
-      "500 feet; 200 feet",
-      "350 feet; 100 feet",
-      "1,000 feet; 500 feet",
-      "500 feet; 300 feet"
-    ],
-    correct: 0,
-    tip: "Headlamps must be dimmed 500 feet before meeting and 200 feet before overtaking another vehicle. (Handbook pg. 43)"
-  },
-  {
-    q: "When are you required to turn on vehicle headlights in Idaho?",
-    options: [
-      "Only between 10:00 PM and 5:00 AM",
-      "From sunset to sunrise, and whenever visibility is reduced to 500 feet or less",
-      "Only when driving on interstates in darkness",
-      "Whenever it is raining, regardless of visibility"
-    ],
-    correct: 1,
-    tip: "Headlamps must be lighted from sunset to sunrise and anytime visibility is reduced to 500 feet or less. (Handbook pg. 43, 110)"
-  },
-  {
-    q: "Under Idaho's GDL program, what is the night travel restriction for a driver under 16 years of age?",
-    options: [
-      "No driving after 9:00 PM under any circumstances.",
-      "Daylight-only driving (5:00 AM to 10:00 PM) unless accompanied by a licensed driver 21 or older in the front seat.",
-      "May drive anytime if driving to work or school.",
-      "May drive after dark accompanied by any licensed sibling."
-    ],
-    correct: 1,
-    tip: "Under 16, daylight-only travel (5:00 AM to 10:00 PM) is allowed unless accompanied by a licensed driver at least 21 in the front seat. (Handbook pg. 16)"
-  },
-  {
-    q: "For the first 6 months of holding an Idaho driver's license, a driver under 17 is limited to:",
-    options: [
-      "Zero passengers",
-      "No more than one passenger under 17 who is not related by blood, adoption, or marriage",
-      "Up to three minor friends",
-      "No passengers on freeways"
-    ],
-    correct: 1,
-    tip: "For the first 6 months, drivers under 17 may carry no more than 1 non-relative passenger under 17. (Handbook pg. 16)"
-  },
-  {
-    q: "In Idaho, an adult driver (21 or older) is legally considered driving under the influence at what Blood Alcohol Concentration (BAC)?",
-    options: [".02 BAC", ".04 BAC", ".08 BAC", ".10 BAC"],
-    correct: 2,
-    tip: "For drivers 21 or older, DUI is .08 BAC or higher. Under 21 is .02, and CDL drivers is .04. (Handbook pg. 132)"
-  },
-  {
-    q: "What is the legal Blood Alcohol Concentration (BAC) limit for drivers under 21 years of age in Idaho?",
-    options: [".00 BAC", ".02 BAC", ".05 BAC", ".08 BAC"],
-    correct: 1,
-    tip: "Idaho has a strict .02 BAC limit for any driver under the age of 21. (Handbook pg. 132)"
-  },
-  {
-    q: "When approaching an emergency vehicle or tow truck stopped with flashing lights on a multi-lane road, what does Idaho law require?",
-    options: [
-      "Maintain speed and sound horn",
-      "Reduce speed below the speed limit and change lanes into a non-adjacent lane if safe",
-      "Stop completely in your lane until passed",
-      "Turn on hazard flashers and accelerate past"
-    ],
-    correct: 1,
-    tip: "Under the Move Over law, reduce speed below the limit and move over into a lane not adjacent to the vehicle if safe to do so. (Handbook pg. 95)"
-  },
-  {
-    q: "In Idaho, studded snow tires are legally permitted between what dates?",
-    options: [
-      "September 1 to April 1",
-      "November 15 to March 15",
-      "October 1 to April 30",
-      "December 1 to March 31"
-    ],
-    correct: 2,
-    tip: "Studded snow tires are allowed only from October 1 to April 30 (unless adjusted by ITD for weather). (Handbook pg. 42, 114)"
-  },
-  {
-    q: "What minimum tire tread depth is required by Idaho law?",
-    options: ["1/32 of an inch", "2/32 of an inch", "4/32 of an inch", "3/16 of an inch"],
-    correct: 1,
-    tip: "Tires must have at least 2/32 of an inch of tread. (Handbook pg. 36, 39)"
-  },
-  {
-    q: "What is the maximum speed limit in any residential, business, or urban district in Idaho unless otherwise posted?",
-    options: ["20 mph", "25 mph", "30 mph", "35 mph"],
-    correct: 3,
-    tip: "The maximum speed in any residential, business, or urban district is 35 mph unless otherwise posted. (Handbook pg. 68)"
-  },
-  {
-    q: "At an uncontrolled intersection where two vehicles arrive at the same time, who yields?",
-    options: [
-      "The larger vehicle yields to the smaller one.",
-      "The vehicle on the left yields to the vehicle on the right.",
-      "The vehicle on the right yields to the vehicle on the left.",
-      "The vehicle traveling faster goes first."
-    ],
-    correct: 1,
-    tip: "If two vehicles arrive simultaneously at an uncontrolled intersection, the vehicle on the left must yield to the vehicle on the right. (Handbook pg. 75)"
-  },
-  {
-    q: "If a traffic signal loses power and goes completely dark, how should you treat the intersection?",
-    options: [
-      "Treat it as an uncontrolled yielding zone",
-      "Yield only to traffic from the right",
-      "Treat it as a four-way stop",
-      "The busiest road has continuous right-of-way"
-    ],
-    correct: 2,
-    tip: "Whenever a traffic signal is dark or non-functioning, treat the intersection as a four-way stop. (Handbook pg. 56, 76, 136)"
-  },
-  {
-    q: "When must a slow-moving vehicle on a two-lane road turn off into a turnout to allow others to pass?",
-    options: [
-      "When driving 10 mph under the speed limit",
-      "When delaying 3 or more vehicles behind it in a rural area",
-      "Whenever any car appears behind it",
-      "Only when directed by law enforcement"
-    ],
-    correct: 1,
-    tip: "Any vehicle delaying 3 or more other vehicles in a rural area or on a 2-lane road must turn off safely to let traffic pass. (Handbook pg. 79)"
-  },
-  {
-    q: "What is the minimum safe clearance distance required when passing a bicyclist in Idaho?",
-    options: ["2 feet", "3 feet", "5 feet", "6 feet"],
-    correct: 1,
-    tip: "A safe margin when passing a bicyclist is at least 3 feet of clearance. (Handbook pg. 98, 101)"
-  },
-  {
-    q: "What is the proper hand signal for a right turn?",
-    options: [
-      "Left arm extended straight out the window",
-      "Left arm and hand extended downward",
-      "Left arm and hand extended upward",
-      "Waving the hand backward"
-    ],
-    correct: 2,
-    tip: "Arm extended upward indicates a right turn; straight out means left; downward means stop/slow. (Handbook pg. 72)"
-  },
-  {
-    q: "Idaho's open container law prohibits:",
-    options: [
-      "Only the driver from having an open alcoholic beverage container",
-      "Both drivers and passengers from possessing an open alcoholic beverage container in the passenger compartment",
-      "Carrying unopened bottles of alcohol in a vehicle",
-      "Drinking soda or beverages while driving"
-    ],
-    correct: 1,
-    tip: "Idaho law prohibits both drivers and passengers from possessing or drinking from open alcoholic beverage containers. (Handbook pg. 131)"
-  },
-  {
-    q: "How many hours of supervised driving must a teen under 17 complete during the supervised instruction period?",
-    options: [
-      "30 hours (5 at night)",
-      "40 hours (10 at night)",
-      "50 hours (10 of which must be at night)",
-      "60 hours (15 at night)"
-    ],
-    correct: 2,
-    tip: "Under the GDL program, drivers must accumulate at least 50 hours of supervised driving, 10 of which must be at night. (Handbook pg. 19)"
-  },
-  {
-    q: "How many questions can you miss on the 40-question Idaho Class D knowledge test before failing?",
-    options: ["Miss up to 4 questions", "Miss up to 6 questions", "Miss up to 8 questions", "Miss up to 10 questions"],
-    correct: 1,
-    tip: "The Idaho Class D knowledge test has 40 questions; you can miss up to six (6) questions and still pass (need 34/40, or 85%). (Handbook pg. 32)"
-  },
-  {
-    q: "If you fail an Idaho driver's knowledge test, how long must you wait before you can retake it?",
-    options: ["24 hours", "3 days", "7 days", "14 days"],
-    correct: 1,
-    tip: "If you fail a knowledge test, you must wait three (3) days to retest and repay the test fee. (Handbook pg. 32)"
-  },
-  {
-    q: "A steady red arrow traffic signal means:",
-    options: [
-      "Stop, then turn right or left after yielding",
-      "No turn is permitted in the direction of the arrow until a signal allows movement",
-      "Turn with caution after yielding to pedestrians",
-      "The lane will end shortly"
-    ],
-    correct: 1,
-    tip: "A steady red arrow means no turn is permitted in the direction of the arrow until an indication allows movement. (Handbook pg. 55, 69)"
-  }
+{
+  q: "When parallel parking next to a curb or edge of the roadway in Idaho, your vehicle must be within what distance of the curb?",
+  options: ["6 inches", "12 inches", "18 inches", "24 inches"],
+  correct: 2,
+  tip: "Idaho law requires you to park parallel to and within 18 inches of the curb or edge of the roadway. (Handbook pg. 80)"
+},
+{
+  q: "What is Idaho's 'Basic Rule' speed law?",
+  options: [
+    "Always drive the exact posted speed limit.",
+    "Drive at a speed that is reasonable and prudent at all times.",
+    "Never drive below 45 mph on any paved highway.",
+    "Stay 5 mph slower than adjacent traffic."
+  ],
+  correct: 1,
+  tip: "Idaho's Basic Rule requires drivers to drive at a speed that is reasonable and prudent for existing road, weather, and traffic conditions. (Handbook pg. 68)"
+},
+{
+  q: "When turning or changing lanes, Idaho law requires you to continuously signal for at least how far in business or residential areas?",
+  options: ["50 feet", "100 feet", "200 feet", "300 feet"],
+  correct: 1,
+  tip: "Signals must start at least 100 feet ahead in business/residential areas, or at least 5 seconds before on freeways. (Handbook pg. 72)"
+},
+{
+  q: "How far in advance must you signal before changing lanes or exiting on a freeway?",
+  options: ["3 seconds", "5 seconds", "100 feet", "10 seconds"],
+  correct: 1,
+  tip: "On freeways or highways, turn signals must be activated at least 5 seconds before changing lanes or exiting. (Handbook pg. 72, 85)"
+},
+{
+  q: "You do NOT have to stop for a school bus with flashing red lights if:",
+  options: [
+    "You are traveling in a rural area.",
+    "The bus is in a turn lane.",
+    "You are traveling in the opposite direction on a highway with four or more lanes (two lanes in each direction).",
+    "You are driving a commercial vehicle."
+  ],
+  correct: 2,
+  tip: "You do not need to stop if traveling in the opposite direction on a highway with four or more lanes (at least two lanes each way). (Handbook pg. 70)"
+},
+{
+  q: "When required to stop at a railroad grade crossing, a vehicle must stop within what distance from the nearest rail?",
+  options: [
+    "Within 25 feet but no less than 5 feet",
+    "Within 50 feet but no less than 15 feet",
+    "Within 75 feet but no less than 20 feet",
+    "Within 100 feet but no less than 30 feet"
+  ],
+  correct: 1,
+  tip: "When required to stop at a railroad crossing, stop within 50 feet but no less than 15 feet from the nearest rail. (Handbook pg. 60, 138)"
+},
+{
+  q: "What is the minimum recommended following distance under ideal driving conditions in Idaho?",
+  options: ["2 seconds", "3 seconds", "4 seconds", "5 seconds"],
+  correct: 1,
+  tip: "The three-second following distance rule is the minimum recommended safe procedure in Idaho. (Handbook pg. 79)"
+},
+{
+  q: "When parking on a hill facing downhill with a curb, which way should you turn your front wheels?",
+  options: [
+    "Straight ahead",
+    "Sharply away from the curb",
+    "Sharply toward and against the curb",
+    "Parallel to the centerline"
+  ],
+  correct: 2,
+  tip: "When parking downhill with a curb, turn your front wheels sharply toward and against the curb. (Handbook pg. 81)"
+},
+{
+  q: "When parking uphill on a street that HAS a curb, how should you turn your wheels?",
+  options: [
+    "Sharply away from the curb",
+    "Sharply toward the curb",
+    "Straight ahead",
+    "Toward the shoulder"
+  ],
+  correct: 0,
+  tip: "When parking uphill with a curb, turn your front wheels sharply away and against the curb. (Handbook pg. 81)"
+},
+{
+  q: "In Idaho, parking is prohibited within how many feet of a fire hydrant?",
+  options: ["10 feet", "15 feet", "20 feet", "30 feet"],
+  correct: 1,
+  tip: "Parking is prohibited within 15 feet of a fire hydrant. (Handbook pg. 81)"
+},
+{
+  q: "Parking is prohibited within how many feet of a stop sign, yield sign, or traffic signal?",
+  options: ["15 feet", "20 feet", "25 feet", "30 feet"],
+  correct: 3,
+  tip: "Parking is illegal within 30 feet of any stop sign, yield sign, or traffic signal. (Handbook pg. 81)"
+},
+{
+  q: "Parking is prohibited within how many feet of a crosswalk?",
+  options: ["15 feet", "20 feet", "30 feet", "50 feet"],
+  correct: 1,
+  tip: "Parking is illegal within 20 feet of a crosswalk at an intersection. (Handbook pg. 81)"
+},
+{
+  q: "When passing another vehicle on a two-lane road, you must complete the pass before coming within how many feet of oncoming traffic?",
+  options: ["100 feet", "150 feet", "200 feet", "400 feet"],
+  correct: 2,
+  tip: "You must complete the pass and return to your lane before coming within 200 feet of oncoming traffic. (Handbook pg. 78)"
+},
+{
+  q: "Passing is strictly prohibited within how many feet of an intersection or railroad crossing?",
+  options: ["50 feet", "100 feet", "150 feet", "200 feet"],
+  correct: 1,
+  tip: "Passing is prohibited within 100 feet of an intersection or railroad grade crossing. (Handbook pg. 76)"
+},
+{
+  q: "On a two-lane highway with a posted limit of 55 mph or higher, how much may a passenger car exceed the speed limit when passing a slower vehicle?",
+  options: [
+    "You cannot exceed the speed limit at all",
+    "Up to 5 mph",
+    "Up to 10 mph",
+    "Up to 15 mph"
+  ],
+  correct: 3,
+  tip: "Idaho allows passenger vehicles/pickups (not towing) to exceed the speed limit by up to 15 mph to pass on 2-lane roads posted at 55 mph or more. (Handbook pg. 77)"
+},
+{
+  q: "You must dim your high-beam headlights within _____ feet of meeting an oncoming vehicle and _____ feet of overtaking another vehicle.",
+  options: [
+    "500 feet; 200 feet",
+    "350 feet; 100 feet",
+    "1,000 feet; 500 feet",
+    "500 feet; 300 feet"
+  ],
+  correct: 0,
+  tip: "Headlamps must be dimmed 500 feet before meeting and 200 feet before overtaking another vehicle. (Handbook pg. 43)"
+},
+{
+  q: "When are you required to turn on vehicle headlights in Idaho?",
+  options: [
+    "Only between 10:00 PM and 5:00 AM",
+    "From sunset to sunrise, and whenever visibility is reduced to 500 feet or less",
+    "Only when driving on interstates in darkness",
+    "Whenever it is raining, regardless of visibility"
+  ],
+  correct: 1,
+  tip: "Headlamps must be lighted from sunset to sunrise and anytime visibility is reduced to 500 feet or less. (Handbook pg. 43, 110)"
+},
+{
+  q: "Under Idaho's GDL program, what is the night travel restriction for a driver under 16 years of age?",
+  options: [
+    "No driving after 9:00 PM under any circumstances.",
+    "Daylight-only driving (5:00 AM to 10:00 PM) unless accompanied by a licensed driver 21 or older in the front seat.",
+    "May drive anytime if driving to work or school.",
+    "May drive after dark accompanied by any licensed sibling."
+  ],
+  correct: 1,
+  tip: "Under 16, daylight-only travel (5:00 AM to 10:00 PM) is allowed unless accompanied by a licensed driver at least 21 in the front seat. (Handbook pg. 16)"
+},
+{
+  q: "For the first 6 months of holding an Idaho driver's license, a driver under 17 is limited to:",
+  options: [
+    "Zero passengers",
+    "No more than one passenger under 17 who is not related by blood, adoption, or marriage",
+    "Up to three minor friends",
+    "No passengers on freeways"
+  ],
+  correct: 1,
+  tip: "For the first 6 months, drivers under 17 may carry no more than 1 non-relative passenger under 17. (Handbook pg. 16)"
+},
+{
+  q: "In Idaho, an adult driver (21 or older) is legally considered driving under the influence at what Blood Alcohol Concentration (BAC)?",
+  options: [".02 BAC", ".04 BAC", ".08 BAC", ".10 BAC"],
+  correct: 2,
+  tip: "For drivers 21 or older, DUI is .08 BAC or higher. Under 21 is .02, and CDL drivers is .04. (Handbook pg. 132)"
+},
+{
+  q: "What is the legal Blood Alcohol Concentration (BAC) limit for drivers under 21 years of age in Idaho?",
+  options: [".00 BAC", ".02 BAC", ".05 BAC", ".08 BAC"],
+  correct: 1,
+  tip: "Idaho has a strict .02 BAC limit for any driver under the age of 21. (Handbook pg. 132)"
+},
+{
+  q: "When approaching an emergency vehicle or tow truck stopped with flashing lights on a multi-lane road, what does Idaho law require?",
+  options: [
+    "Maintain speed and sound horn",
+    "Reduce speed below the speed limit and change lanes into a non-adjacent lane if safe",
+    "Stop completely in your lane until passed",
+    "Turn on hazard flashers and accelerate past"
+  ],
+  correct: 1,
+  tip: "Under the Move Over law, reduce speed below the limit and move over into a lane not adjacent to the vehicle if safe to do so. (Handbook pg. 95)"
+},
+{
+  q: "In Idaho, studded snow tires are legally permitted between what dates?",
+  options: [
+    "September 1 to April 1",
+    "November 15 to March 15",
+    "October 1 to April 30",
+    "December 1 to March 31"
+  ],
+  correct: 2,
+  tip: "Studded snow tires are allowed only from October 1 to April 30 (unless adjusted by ITD for weather). (Handbook pg. 42, 114)"
+},
+{
+  q: "What minimum tire tread depth is required by Idaho law?",
+  options: ["1/32 of an inch", "2/32 of an inch", "4/32 of an inch", "3/16 of an inch"],
+  correct: 1,
+  tip: "Tires must have at least 2/32 of an inch of tread. (Handbook pg. 36, 39)"
+},
+{
+  q: "What is the maximum speed limit in any residential, business, or urban district in Idaho unless otherwise posted?",
+  options: ["20 mph", "25 mph", "30 mph", "35 mph"],
+  correct: 3,
+  tip: "The maximum speed in any residential, business, or urban district is 35 mph unless otherwise posted. (Handbook pg. 68)"
+},
+{
+  q: "At an uncontrolled intersection where two vehicles arrive at the same time, who yields?",
+  options: [
+    "The larger vehicle yields to the smaller one.",
+    "The vehicle on the left yields to the vehicle on the right.",
+    "The vehicle on the right yields to the vehicle on the left.",
+    "The vehicle traveling faster goes first."
+  ],
+  correct: 1,
+  tip: "If two vehicles arrive simultaneously at an uncontrolled intersection, the vehicle on the left must yield to the vehicle on the right. (Handbook pg. 75)"
+},
+{
+  q: "If a traffic signal loses power and goes completely dark, how should you treat the intersection?",
+  options: [
+    "Treat it as an uncontrolled yielding zone",
+    "Yield only to traffic from the right",
+    "Treat it as a four-way stop",
+    "The busiest road has continuous right-of-way"
+  ],
+  correct: 2,
+  tip: "Whenever a traffic signal is dark or non-functioning, treat the intersection as a four-way stop. (Handbook pg. 56, 76, 136)"
+},
+{
+  q: "When must a slow-moving vehicle on a two-lane road turn off into a turnout to allow others to pass?",
+  options: [
+    "When driving 10 mph under the speed limit",
+    "When delaying 3 or more vehicles behind it in a rural area",
+    "Whenever any car appears behind it",
+    "Only when directed by law enforcement"
+  ],
+  correct: 1,
+  tip: "Any vehicle delaying 3 or more other vehicles in a rural area or on a 2-lane road must turn off safely to let traffic pass. (Handbook pg. 79)"
+},
+{
+  q: "What is the minimum safe clearance distance required when passing a bicyclist in Idaho?",
+  options: ["2 feet", "3 feet", "5 feet", "6 feet"],
+  correct: 1,
+  tip: "A safe margin when passing a bicyclist is at least 3 feet of clearance. (Handbook pg. 98, 101)"
+},
+{
+  q: "What is the proper hand signal for a right turn?",
+  options: [
+    "Left arm extended straight out the window",
+    "Left arm and hand extended downward",
+    "Left arm and hand extended upward",
+    "Waving the hand backward"
+  ],
+  correct: 2,
+  tip: "Arm extended upward indicates a right turn; straight out means left; downward means stop/slow. (Handbook pg. 72)"
+},
+{
+  q: "Idaho's open container law prohibits:",
+  options: [
+    "Only the driver from having an open alcoholic beverage container",
+    "Both drivers and passengers from possessing an open alcoholic beverage container in the passenger compartment",
+    "Carrying unopened bottles of alcohol in a vehicle",
+    "Drinking soda or beverages while driving"
+  ],
+  correct: 1,
+  tip: "Idaho law prohibits both drivers and passengers from possessing or drinking from open alcoholic beverage containers. (Handbook pg. 131)"
+},
+{
+  q: "How many hours of supervised driving must a teen under 17 complete during the supervised instruction period?",
+  options: [
+    "30 hours (5 at night)",
+    "40 hours (10 at night)",
+    "50 hours (10 of which must be at night)",
+    "60 hours (15 at night)"
+  ],
+  correct: 2,
+  tip: "Under the GDL program, drivers must accumulate at least 50 hours of supervised driving, 10 of which must be at night. (Handbook pg. 19)"
+},
+{
+  q: "How many questions can you miss on the 40-question Idaho Class D knowledge test before failing?",
+  options: ["Miss up to 4 questions", "Miss up to 6 questions", "Miss up to 8 questions", "Miss up to 10 questions"],
+  correct: 1,
+  tip: "The Idaho Class D knowledge test has 40 questions; you can miss up to six (6) questions and still pass (need 34/40, or 85%). (Handbook pg. 32)"
+},
+{
+  q: "If you fail an Idaho driver's knowledge test, how long must you wait before you can retake it?",
+  options: ["24 hours", "3 days", "7 days", "14 days"],
+  correct: 1,
+  tip: "If you fail a knowledge test, you must wait three (3) days to retest and repay the test fee. (Handbook pg. 32)"
+},
+{
+  q: "A steady red arrow traffic signal means:",
+  options: [
+    "Stop, then turn right or left after yielding",
+    "No turn is permitted in the direction of the arrow until a signal allows movement",
+    "Turn with caution after yielding to pedestrians",
+    "The lane will end shortly"
+  ],
+  correct: 1,
+  tip: "A steady red arrow means no turn is permitted in the direction of the arrow until an indication allows movement. (Handbook pg. 55, 69)"
+},
+{
+  q: "In Idaho, children how old or younger must be secured in an approved child car safety seat when riding in a non-commercial vehicle?",
+  options: ["4 years or younger", "6 years or younger", "8 years or younger", "10 years or younger"],
+  correct: 1,
+  tip: "Idaho law requires children 6 years of age or younger to be properly secured in an approved child car safety seat. (Handbook pg. 40)"
+},
+{
+  q: "Idaho's seat belt law requires which of the following?",
+  options: [
+    "Only the driver must wear a seat belt",
+    "Only front-seat occupants must wear a seat belt",
+    "All occupants must wear seat belts or shoulder straps when the vehicle is factory-equipped with them",
+    "Seat belts are only required on highways"
+  ],
+  correct: 2,
+  tip: "Idaho law requires all occupants to wear safety belts and/or shoulder straps when riding in a vehicle equipped with them by the factory. (Handbook pg. 41)"
+},
+{
+  q: "Under Idaho law, which of the following is illegal while driving?",
+  options: [
+    "Talking on a hands-free device",
+    "Reading, writing, or sending a text message",
+    "Listening to the radio",
+    "Using a dashboard-mounted GPS"
+  ],
+  correct: 1,
+  tip: "Reading, writing, or sending written communication (text messaging) while driving is illegal in Idaho and considered an infraction. (Handbook pg. 92)"
+},
+{
+  q: "When entering a roundabout in Idaho, drivers must travel in which direction around the circle?",
+  options: ["Clockwise", "Counter-clockwise", "Whichever direction is shortest", "Direction posted only at night"],
+  correct: 1,
+  tip: "Drivers must enter and travel counter-clockwise around a roundabout, merging in whether turning right, left, making a U-turn, or continuing straight. (Handbook pg. 62)"
+},
+{
+  q: "When entering a roundabout, who has the right-of-way?",
+  options: [
+    "Vehicles entering the roundabout",
+    "Vehicles already traveling in the circle",
+    "Whichever vehicle arrives first",
+    "The vehicle on the right"
+  ],
+  correct: 1,
+  tip: "All drivers must yield the right-of-way to vehicles already in the circle, and yield to traffic on the left before entering. (Handbook pg. 62)"
+},
+{
+  q: "In Idaho's open range areas, who has the right-of-way when livestock is on the roadway?",
+  options: [
+    "The livestock always has the right-of-way",
+    "Vehicles always have the right-of-way over livestock",
+    "It depends on which arrived at the road first",
+    "Only law enforcement can determine right-of-way"
+  ],
+  correct: 0,
+  tip: "Horses, cattle, sheep, goats, and other livestock under controlled movement over a highway have the right-of-way in Idaho's open range. (Handbook pg. 107)"
+},
+{
+  q: "According to the Idaho handbook, at what speed can tires begin to lose all contact with a wet road and hydroplane?",
+  options: ["25 mph", "35 mph", "45 mph", "55 mph"],
+  correct: 3,
+  tip: "At speeds up to 35 mph most tires still grip a wet road, but at 55 mph tires may lose all contact with the road and begin to hydroplane. (Handbook pg. 111)"
+},
+{
+  q: "When you encounter a funeral procession on the road, Idaho law requires you to:",
+  options: [
+    "Join the procession if convenient",
+    "Drive between vehicles in the procession if there is a gap",
+    "Always give the procession the right-of-way and not drive between its vehicles",
+    "Pass the procession only in the right lane"
+  ],
+  correct: 2,
+  tip: "Do not drive between or join a funeral procession unless authorized by a police officer, and always give the procession the right-of-way. (Handbook pg. 78)"
+},
+{
+  q: "Under Idaho's point system, accumulating 12 to 17 points within any 12-month period results in what penalty?",
+  options: ["A warning letter", "A 30-day license suspension", "A 90-day license suspension", "A 6-month license suspension"],
+  correct: 1,
+  tip: "12 to 17 points in any 12 months results in a 30-day suspension (8-11 points draws a warning letter, 18-23 in 24 months a 90-day suspension, and 24+ in 36 months a 6-month suspension). (Handbook pg. 123)"
+},
+{
+  q: "Refusing to take an evidentiary test (breath, blood, or urine) after being arrested for DUI in Idaho results in:",
+  options: [
+    "No penalty as long as you cooperate later",
+    "An automatic administrative license suspension",
+    "A warning letter only",
+    "Mandatory community service with no license impact"
+  ],
+  correct: 1,
+  tip: "Refusing an evidentiary test triggers an Administrative License Suspension, an automatic suspension separate from any criminal DUI penalty. (Handbook pg. 124)"
+},
+{
+  q: "A motor vehicle must yield to a pedestrian in which of the following situations?",
+  options: [
+    "The pedestrian is crossing mid-block with no crosswalk",
+    "The pedestrian is in a marked or unmarked crosswalk at an intersection",
+    "The pedestrian is directed to stop by a traffic signal",
+    "The pedestrian is standing on a sidewalk"
+  ],
+  correct: 1,
+  tip: "Motor vehicles must yield to pedestrians in a marked or unmarked crosswalk at an intersection, among other situations. (Handbook pg. 95)"
+},
+{
+  q: "When you see a pedestrian carrying a clearly visible white cane or accompanied by a service dog, you must:",
+  options: [
+    "Sound your horn to alert them",
+    "Yield to the pedestrian",
+    "Proceed at normal speed since they will yield to you",
+    "Only yield if they are in a marked crosswalk"
+  ],
+  correct: 1,
+  tip: "Motor vehicles must yield to a pedestrian carrying a clearly visible white cane or accompanied by a service dog. (Handbook pg. 95)"
+},
+{
+  q: "In Idaho, it is illegal to:",
+  options: [
+    "Drive at the posted speed limit",
+    "Drive so slowly that you disrupt the normal flow of traffic",
+    "Use the left lane to pass another vehicle",
+    "Drive the speed limit in a work zone"
+  ],
+  correct: 1,
+  tip: "It is illegal to drive so slowly that you disrupt the normal flow of traffic, or to impede traffic by lingering in the extreme left lane. (Handbook pg. 69)"
+},
+{
+  q: "Violating a posted speed limit in an Idaho work zone results in:",
+  options: [
+    "No different penalty than a normal speeding ticket",
+    "An enhanced, fixed penalty",
+    "A warning only, no fine",
+    "Automatic license suspension"
+  ],
+  correct: 1,
+  tip: "Violating a work zone speed limit can result in an enhanced, fixed penalty. (Handbook pg. 69)"
+},
+{
+  q: "At what age can you request to have a 'DONOR' designation added to your Idaho driver's license or ID card?",
+  options: ["13 years or older", "15 years or older", "16 years or older", "18 years or older"],
+  correct: 1,
+  tip: "If you are 15 years of age or older, you may request the 'DONOR' designation on your license or ID card (parental consent required if under 18). (Handbook pg. 27)"
+}
 ];
 
 const TEST_SIZE = 20;
@@ -650,7 +746,6 @@ function shuffle(array) {
 function startQuiz() {
   const shuffledBank = shuffle(QUESTION_BANK);
   const selected = shuffledBank.slice(0, Math.min(TEST_SIZE, shuffledBank.length));
-  
   currentQuestions = selected.map(item => {
     const optionsWithOrig = item.options.map((opt, idx) => ({ text: opt, isCorrect: idx === item.correct }));
     const shuffledOptions = shuffle(optionsWithOrig);
@@ -662,32 +757,25 @@ function startQuiz() {
       tip: item.tip
     };
   });
-
   currentIndex = 0;
   score = 0;
   hasAnswered = false;
-
   document.getElementById('quizCard').style.display = 'block';
   document.getElementById('progressContainer').style.display = 'block';
   document.getElementById('resultsScreen').style.display = 'none';
-  
   renderQuestion();
 }
 
 function renderQuestion() {
   hasAnswered = false;
   const qData = currentQuestions[currentIndex];
-
   document.getElementById('questionNum').innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
   document.getElementById('currentScore').innerText = `Score: ${score}/${currentIndex}`;
   document.getElementById('questionText').innerText = qData.q;
-
   const pct = (currentIndex / currentQuestions.length) * 100;
   document.getElementById('progressBar').style.width = `${pct}%`;
-
   const container = document.getElementById('optionsContainer');
   container.innerHTML = '';
-
   const labels = ['A', 'B', 'C', 'D'];
   qData.options.forEach((optText, idx) => {
     const btn = document.createElement('button');
@@ -696,24 +784,20 @@ function renderQuestion() {
     btn.onclick = () => selectAnswer(idx);
     container.appendChild(btn);
   });
-
   const feedback = document.getElementById('feedback');
   feedback.style.display = 'none';
   feedback.className = 'feedback';
-
   document.getElementById('nextBtn').style.display = 'none';
 }
 
 function selectAnswer(selectedIdx) {
   if (hasAnswered) return;
   hasAnswered = true;
-
   const qData = currentQuestions[currentIndex];
   const buttons = document.querySelectorAll('.option-btn');
   const feedback = document.getElementById('feedback');
   const feedbackTitle = document.getElementById('feedbackTitle');
   const feedbackText = document.getElementById('feedbackText');
-
   buttons.forEach((btn, idx) => {
     btn.onclick = null;
     if (idx === qData.correct) {
@@ -722,7 +806,6 @@ function selectAnswer(selectedIdx) {
       btn.classList.add('wrong');
     }
   });
-
   if (selectedIdx === qData.correct) {
     score++;
     feedback.className = 'feedback correct';
@@ -731,10 +814,8 @@ function selectAnswer(selectedIdx) {
     feedback.className = 'feedback wrong';
     feedbackTitle.innerText = 'Incorrect';
   }
-
   feedbackText.innerText = qData.tip;
   feedback.style.display = 'block';
-
   document.getElementById('currentScore').innerText = `Score: ${score}/${currentIndex + 1}`;
   document.getElementById('nextBtn').style.display = 'inline-block';
 }
@@ -751,18 +832,14 @@ function nextQuestion() {
 function showResults() {
   document.getElementById('quizCard').style.display = 'none';
   document.getElementById('progressContainer').style.display = 'none';
-  
   const resultsScreen = document.getElementById('resultsScreen');
   resultsScreen.style.display = 'block';
-
   const pct = Math.round((score / currentQuestions.length) * 100);
   document.getElementById('scorePercent').innerText = `${pct}%`;
   document.getElementById('scoreFraction').innerText = `${score} / ${currentQuestions.length}`;
-
   const passed = pct >= 85; // Idaho allows max 6 misses out of 40 (85%)
   const badge = document.getElementById('statusBadge');
   const summary = document.getElementById('summaryMessage');
-
   if (passed) {
     badge.className = 'pass-tag pass';
     badge.innerText = 'PASSING SCORE (85%+)';
