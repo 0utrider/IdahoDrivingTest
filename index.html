@@ -242,6 +242,18 @@ header p {
   font-size: 1rem;
   cursor: pointer;
 }
+.site-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 0.85rem;
+}
+.site-footer a {
+  color: #6ee7b7;
+  text-decoration: underline;
+}
+.site-footer a:hover {
+  color: #a7f3d0;
+}
 </style>
 </head>
 <body>
@@ -278,6 +290,9 @@ header p {
 <p id="summaryMessage" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 8px;"></p>
 <button class="restart-btn" onclick="startQuiz()">Start New Random Test</button>
 </div>
+<footer class="site-footer">
+<a href="https://github.com/0utrider/IdahoDrivingTest" target="_blank" rel="noopener noreferrer">About this quiz</a>
+</footer>
 </div>
 <script>
 const QUESTION_BANK = [
