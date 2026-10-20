@@ -83,6 +83,17 @@ header p {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+.q-img {
+  display: none;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.q-img svg {
+  height: 140px;
+  width: auto;
+  max-width: 100%;
+  border-radius: 8px;
+}
 .question-text {
   font-size: 1.05rem;
   font-weight: 600;
@@ -242,6 +253,27 @@ header p {
   font-size: 1rem;
   cursor: pointer;
 }
+.menu-screen { display: block; text-align: center; }
+.menu-screen h2 { font-size: 1.1rem; margin-bottom: 4px; }
+.menu-screen p.sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; }
+.mode-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 16px;
+  text-align: left;
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mode-btn:hover { border-color: var(--primary); }
+.mode-btn small { display: block; margin-top: 4px; font-weight: 400; font-size: 0.82rem; color: var(--text-muted); }
+.restart-btn.secondary { background-color: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px; }
+.rating { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin: 4px 0 8px; }
 .site-footer {
   text-align: center;
   margin-top: 24px;
@@ -263,14 +295,21 @@ header p {
 <h1>Idaho Knowledge Test Prep</h1>
 <p>Randomized pool based on the Idaho Driver's Handbook</p>
 </header>
+<div class="card menu-screen" id="menuScreen">
+<h2>Choose your quiz</h2>
+<p class="sub">Both modes pull random questions from the Idaho Driver's Handbook.</p>
+<button class="mode-btn" onclick="startQuiz('full')">Full Practice Test<small>20 random questions on everything: rules, signs, signals, and more</small></button>
+<button class="mode-btn" onclick="startQuiz('signs')">Signs &amp; Signals<small>40 random questions on signs, barricades, signals, and pavement markings, with a rating at the end</small></button>
+</div>
 <div class="progress-bar-container" id="progressContainer">
 <div class="progress-bar" id="progressBar"></div>
 </div>
 <div class="card" id="quizCard">
 <div class="meta">
-<span id="questionNum">Question 1 of 20</span>
+<span id="questionNum">Question 1</span>
 <span id="currentScore">Score: 0/0</span>
 </div>
+<div class="q-img" id="questionImg"></div>
 <div class="question-text" id="questionText">Loading question...</div>
 <div class="options" id="optionsContainer"></div>
 <div class="feedback" id="feedback">
@@ -284,12 +323,14 @@ header p {
 <div class="card results-screen" id="resultsScreen">
 <h2>Exam Complete</h2>
 <div id="statusBadge" class="pass-tag">PASS</div>
+<div class="rating" id="ratingText"></div>
 <div class="score-circle">
 <div class="pct" id="scorePercent">0%</div>
 <div class="detail" id="scoreFraction">0 / 0</div>
 </div>
 <p id="summaryMessage" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 8px;"></p>
-<button class="restart-btn" onclick="startQuiz()">Start New Random Test</button>
+<button class="restart-btn" onclick="startQuiz(currentMode)">Try Again (same mode)</button>
+<button class="restart-btn secondary" onclick="showMenu()">Main Menu</button>
 </div>
 <footer class="site-footer">
 <a href="https://github.com/0utrider/IdahoDrivingTest" target="_blank" rel="noopener noreferrer">About this quiz</a>
@@ -744,7 +785,778 @@ const QUESTION_BANK = [
 }
 ];
 
-const TEST_SIZE = 20;
+/* ---------- Inline SVG art for sign / signal / marking questions ---------- */
+const ART = (() => {
+  const RED = '#c8102e', YEL = '#ffd400', ORG = '#f58220', LIME = '#c6ff00', INK = '#111';
+  const A = (label, inner, vb = '0 0 120 120') =>
+    `<svg viewBox="${vb}" role="img" aria-label="${label}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+  const T = (x, y, s, t, fill = '#fff') =>
+    `<text x="${x}" y="${y}" font-size="${s}" font-weight="700" fill="${fill}" text-anchor="middle" font-family="Arial,Helvetica,sans-serif">${t}</text>`;
+  const poly = (pts, fill, stroke = 'none', sw = 0, extra = '') =>
+    `<polygon points="${pts}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" ${extra}/>`;
+  const ln = (x1, y1, x2, y2, w = 6, c = INK, extra = '') =>
+    `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" ${extra}/>`;
+  const path = (d, w = 6, c = INK, extra = '') =>
+    `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linejoin="round" ${extra}/>`;
+  const rect = (x, y, w, h, fill, stroke = 'none', sw = 0, rx = 0) =>
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+  const circ = (cx, cy, r, fill, stroke = 'none', sw = 0) =>
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+  const arrow = (x1, y1, x2, y2, w = 6, c = INK, h = 16) => {
+    const a = Math.atan2(y2 - y1, x2 - x1), ca = Math.cos(a), sa = Math.sin(a);
+    const bx = x2 - ca * h, by = y2 - sa * h;
+    const p = `${x2},${y2} ${bx - sa * h * 0.6},${by + ca * h * 0.6} ${bx + sa * h * 0.6},${by - ca * h * 0.6}`;
+    return ln(x1, y1, bx, by, w, c) + poly(p, c);
+  };
+  const person = (x, y, s = 1, c = INK) =>
+    `<g transform="translate(${x} ${y}) scale(${s})" stroke="${c}" stroke-width="5" stroke-linecap="round" fill="${c}">` +
+    `<circle cx="0" cy="-22" r="7" stroke="none"/><path d="M0 -12 V10 M0 10 L-9 30 M0 10 L9 30 M-12 -2 H12" fill="none"/></g>`;
+  const bike = (x, y, s = 1, c = INK) =>
+    `<g transform="translate(${x} ${y}) scale(${s})" stroke="${c}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
+    `<circle cx="-22" cy="12" r="13"/><circle cx="22" cy="12" r="13"/>` +
+    `<path d="M-22 12 L-6 -10 H14 M-6 -10 L2 12 H-22 M2 12 H22 M14 -10 L22 12 M-10 -16 H2"/></g>`;
+  const diamond = (fill, inner) =>
+    poly('60,3 117,60 60,117 3,60', fill) + poly('60,11 109,60 60,109 11,60', 'none', INK, 3) + inner;
+  const pent = (fill, inner) =>
+    poly('60,4 114,36 114,114 6,114 6,36', fill) + poly('60,12 107,40 107,107 13,107 13,40', 'none', INK, 3) + inner;
+  const rectSign = (w, h, fill, textFill, lines, size) => {
+    let s = rect(3, 3, w - 6, h - 6, fill, textFill, 4, 8);
+    const gap = size * 1.25, y0 = h / 2 - ((lines.length - 1) * gap) / 2 + size * 0.35;
+    lines.forEach((t, i) => { s += T(w / 2, y0 + i * gap, size, t, textFill); });
+    return s;
+  };
+
+  /* --- regulatory --- */
+  const stop = A('Stop sign',
+    poly('36,3 84,3 117,36 117,84 84,117 36,117 3,84 3,36', '#fff') +
+    poly('40,9 80,9 111,40 111,80 80,111 40,111 9,80 9,40', RED) + T(60, 72, 30, 'STOP'));
+  const tri = (s, c) => poly('60,112 6,14 114,14', c, 'none', 0, `transform="translate(60 47) scale(${s}) translate(-60 -47)"`);
+  const yieldSign = A('Yield sign', tri(1, '#fff') + tri(0.88, RED) + tri(0.52, '#fff'));
+  const doNotEnter = A('Do Not Enter sign', circ(60, 60, 56, RED, '#fff', 3) + rect(20, 50, 80, 20, '#fff'));
+  const speed = A('Speed limit 45 sign',
+    rect(4, 4, 92, 122, '#fff', INK, 4, 8) + T(50, 32, 17, 'SPEED', INK) + T(50, 52, 17, 'LIMIT', INK) + T(50, 108, 54, '45', INK),
+    '0 0 100 130');
+  const keepRight = A('Keep right of island sign',
+    rect(4, 4, 112, 112, '#fff', INK, 4, 8) + `<path d="M34 84 A18 28 0 0 1 70 84 Z" fill="${INK}"/>` +
+    path('M60 112 V96 L86 74 V40', 10) + poly('72,42 100,42 86,16', INK));
+  const noRing = circ(60, 60, 40, 'none', RED, 9) + ln(32, 88, 88, 32, 9, RED);
+  const noLeft = A('No left turn sign',
+    rect(4, 4, 112, 112, '#fff', INK, 4, 8) + path('M80 92 V64 Q80 48 64 48 H48', 10) + poly('32,48 52,34 52,62', INK) + noRing);
+  const noUturn = A('No U-turn sign',
+    rect(4, 4, 112, 112, '#fff', INK, 4, 8) + path('M76 92 V54 Q76 32 58 32 Q40 32 40 54 V66', 10) + poly('52,64 28,64 40,86', INK) + noRing);
+
+  /* --- work zone --- */
+  const shiftArrow = (x) => path(`M${x} 96 C${x} 82 ${x + 12} 80 ${x + 12} 66 C${x + 12} 52 ${x} 52 ${x} 46`, 7) + poly(`${x - 8},46 ${x + 8},46 ${x},28`, INK);
+  const laneShift = A('Lane shift work zone sign', diamond(ORG, shiftArrow(46) + shiftArrow(74)));
+  const preparedStop = A('Be prepared to stop sign',
+    rectSign(160, 100, ORG, INK, ['BE PREPARED', 'TO STOP'], 18), '0 0 160 100');
+  const slowMoving = A('Slow moving vehicle emblem',
+    poly('60,8 112,104 8,104', RED) +
+    poly('60,38 90,94 30,94', ORG));
+  const roadClosed = A('Road closed sign', rectSign(160, 100, '#fff', INK, ['ROAD', 'CLOSED'], 26), '0 0 160 100');
+  const closedThru = A('Road closed to thru traffic sign',
+    rectSign(160, 110, '#fff', INK, ['ROAD CLOSED', 'TO', 'THRU TRAFFIC'], 17), '0 0 160 110');
+
+  /* --- warning --- */
+  const t3 = A('Three-way T intersection sign', diamond(YEL, ln(30, 42, 90, 42, 13) + ln(60, 42, 60, 98, 13)));
+  const cross = A('Crossroad sign', diamond(YEL, ln(28, 60, 92, 60, 12) + ln(60, 28, 60, 96, 12)));
+  const lamp = (cx, cy, c) => circ(cx, cy, 8, c);
+  const signalAhead = A('Traffic signal ahead sign',
+    diamond(YEL, rect(46, 26, 28, 68, INK, 'none', 0, 6) + lamp(60, 41, '#ef4444') + lamp(60, 60, '#fbbf24') + lamp(60, 79, '#22c55e')));
+  const merging = A('Merging traffic sign', diamond(YEL, ln(54, 100, 54, 24, 9) + path('M78 100 V82 C78 62 54 64 54 44', 9)));
+  const twoWay = A('Two-way traffic sign', diamond(YEL, arrow(44, 96, 44, 28, 8, INK, 18) + arrow(76, 24, 76, 92, 8, INK, 18)));
+  const laneEnds = A('Lane ends merge left sign',
+    diamond(YEL, ln(40, 98, 40, 24, 8) + path('M80 98 V72 L50 38', 8) + ln(60, 98, 60, 74, 5, INK, 'stroke-dasharray="8 6"')));
+  const school = A('School zone sign', pent(LIME, person(42, 58, 0.95) + person(76, 62, 0.8)));
+  const pedestrian = A('Pedestrian crossing sign', diamond(LIME, person(60, 56, 1.2)));
+  const lowClear = A('Low clearance sign',
+    rectSign(160, 100, YEL, INK, ['LOW', 'CLEARANCE', '12\'-6"'], 18), '0 0 160 100');
+  const railroadAdv = A('Railroad crossing advance warning sign',
+    circ(60, 60, 56, YEL, INK, 4) + ln(40, 38, 80, 84, 9) + ln(80, 38, 40, 84, 9) + T(22, 68, 22, 'R', INK) + T(98, 68, 22, 'R', INK));
+  const slippery = A('Slippery when wet sign',
+    diamond(YEL,
+      rect(38, 44, 44, 14, INK, 'none', 0, 4) + poly('46,44 52,32 70,32 76,44', INK) +
+      circ(48, 62, 6, INK, YEL, 2) + circ(72, 62, 6, INK, YEL, 2) +
+      path('M34 82 q8 -8 16 0 t16 0 t16 0', 5)));
+  const hill = A('Steep hill sign',
+    diamond(YEL, poly('28,40 94,86 28,86', INK) +
+      `<g transform="translate(58 61) rotate(35) translate(-58 -61)">${rect(44, 38, 26, 12, INK, 'none', 0, 2)}${circ(50, 52, 4, INK, YEL, 1.5)}${circ(64, 52, 4, INK, YEL, 1.5)}</g>` +
+      T(82, 56, 15, '8%', INK)));
+  const noPassing = A('No passing zone pennant sign',
+    poly('4,8 4,112 116,60', YEL, INK, 4) + T(40, 46, 14, 'NO', INK) + T(46, 64, 14, 'PASSING', INK) + T(40, 82, 14, 'ZONE', INK));
+  const shareRoad = A('Share the road sign',
+    diamond(YEL, bike(60, 56, 0.85)) +
+    rect(10, 126, 100, 40, YEL, INK, 4, 4) + T(60, 144, 14, 'SHARE', INK) + T(60, 160, 14, 'THE ROAD', INK),
+    '0 0 120 170');
+
+  /* --- guide signs --- */
+  const guide = (fill, lines, label) => A(label, rectSign(160, 100, fill, '#fff', lines, 20), '0 0 160 100');
+  const guideGreen = guide('#006b3f', ['BOISE', '25 MILES'], 'Green guide sign');
+  const guideBlue = guide('#0057b8', ['GAS', 'FOOD'], 'Blue guide sign');
+  const guideBrown = guide('#6b3e1d', ['STATE', 'PARK'], 'Brown guide sign');
+
+  /* --- barricades --- */
+  const barricade = (kind) => {
+    // clip a convex polygon to x0 <= x <= x1 (Sutherland-Hodgman), so no clipPath is needed
+    const clipX = (pts, x0, x1) => {
+      const cut = (poly, inside, hit) => {
+        const out = [];
+        poly.forEach((p, k) => {
+          const q = poly[(k + 1) % poly.length];
+          if (inside(p)) out.push(p);
+          if (inside(p) !== inside(q)) out.push(hit(p, q));
+        });
+        return out;
+      };
+      const at = (x) => (p, q) => [x, p[1] + ((q[1] - p[1]) * (x - p[0])) / (q[0] - p[0])];
+      let r = cut(pts, (p) => p[0] >= x0, at(x0));
+      return r.length ? cut(r, (p) => p[0] <= x1, at(x1)) : r;
+    };
+    const stripes = (x0, x1, dx) => {
+      let s = '';
+      for (let x = -80; x < 220; x += 28) {
+        const c = clipX([[x, 20], [x + 14, 20], [x + 14 + dx, 56], [x + dx, 56]], x0, x1);
+        if (c.length > 2) s += poly(c.map((p) => p.map((n) => n.toFixed(1)).join(',')).join(' '), '#fff');
+      }
+      return s;
+    };
+    let body = rect(10, 20, 140, 36, ORG);
+    if (kind === 'v') body += stripes(10, 80, 20) + stripes(80, 150, -20);
+    else body += stripes(10, 150, kind === 'left' ? -20 : 20);
+    return A(kind === 'v' ? 'V-shaped barricade' : `Barricade with stripes angled down to the ${kind}`,
+      ln(30, 56, 22, 86, 5, '#ddd') + ln(130, 56, 138, 86, 5, '#ddd') + body + rect(10, 20, 140, 36, 'none', '#fff', 2), '0 0 160 90');
+  };
+
+  /* --- traffic signals --- */
+  const COLORS = { r: '#ef4444', y: '#fbbf24', g: '#22c55e' };
+  const lampAt = (cx, cy, c, val, flash) => {
+    let s = circ(cx, cy, 13, val ? COLORS[c] : '#2b2b2b', val ? 'none' : '#444', 2);
+    if (val === 'L') s = circ(cx, cy, 13, '#2b2b2b', '#444', 2) + arrow(cx + 7, cy, cx - 8, cy, 4, COLORS[c], 9);
+    if (flash) s += circ(cx, cy, 17, 'none', '#fff', 2).replace('/>', ' stroke-dasharray="4 3"/>');
+    return s;
+  };
+  const signal = (r, y, g, caption, flash = '', label = 'Traffic signal') =>
+    A(label, rect(38, 4, 44, 104, '#111', '#555', 2, 10) +
+      lampAt(60, 28, 'r', r, flash.includes('r')) + lampAt(60, 56, 'y', y, flash.includes('y')) + lampAt(60, 84, 'g', g, flash.includes('g')) +
+      T(60, 128, 12, caption, '#cbd5e1'), '-60 0 240 136');
+  const hawk = (lights, caption) => {
+    const on = (i, c) => (lights[i] ? c : '#2b2b2b');
+    const fl = (i) => (lights[i] === 'f' ? circ([40, 80, 60][i], [26, 26, 70][i], 17, 'none', '#fff', 2).replace('/>', ' stroke-dasharray="4 3"/>') : '');
+    return A('Pedestrian hybrid beacon',
+      rect(18, 4, 84, 90, '#111', '#555', 2, 10) +
+      circ(40, 26, 13, on(0, COLORS.r), '#444', 2) + circ(80, 26, 13, on(1, COLORS.r), '#444', 2) + circ(60, 70, 13, on(2, COLORS.y), '#444', 2) +
+      fl(0) + fl(1) + fl(2) + T(60, 118, 12, caption, '#cbd5e1'), '-60 0 240 126');
+  };
+
+  /* --- pavement markings (top-down road, traffic runs up/down) --- */
+  const road = (inner, label) => A(label, rect(0, 0, 200, 120, '#3a3f4a') + inner, '0 0 200 120');
+  const Y = '#fbbf24', W = '#f8fafc';
+  const vline = (x, c, dash = '', w = 4) => ln(x, 0, x, 120, w, c, dash ? `stroke-dasharray="${dash}"` : '');
+  const dashedYellow = road(vline(100, Y, '14 10'), 'Dashed yellow center line');
+  const doubleYellow = road(vline(96, Y) + vline(104, Y), 'Double solid yellow lines');
+  const solidDashed = road(vline(95, Y) + vline(105, Y, '14 10') + T(55, 66, 28, 'A', '#cbd5e1') + T(150, 66, 28, 'B', '#cbd5e1'), 'Solid and dashed yellow lines');
+  const sharedTurn = road(vline(70, Y) + vline(78, Y, '14 10') + vline(122, Y, '14 10') + vline(130, Y), 'Shared center turn lane markings');
+  const edgeLines = road(vline(16, W) + vline(184, W) + vline(100, Y, '14 10'), 'Solid white edge lines');
+  const whiteSolid = road(vline(16, W) + vline(184, W) + vline(100, W), 'Solid white lane line');
+  const whiteDashed = road(vline(16, W) + vline(184, W) + vline(100, W, '14 10'), 'Dashed white lane line');
+  const whiteDouble = road(vline(16, W) + vline(184, W) + vline(96, W) + vline(104, W), 'Double solid white lane lines');
+  const bikeLane = road(vline(110, W) + vline(190, W) + bike(150, 62, 0.9, W), 'Bike lane with bicycle insignia');
+  const bikeDashed = road(vline(110, W) + vline(150, W, '12 10') + vline(190, W), 'Dashed bike lane line');
+  const bikeGreen = road(vline(110, W) + vline(190, W) + rect(112, 24, 76, 72, '#16a34a') + bike(150, 62, 0.9, W), 'Green pavement in bike lane');
+  const rrMarking = road(ln(60, 18, 140, 70, 7, W) + ln(140, 18, 60, 70, 7, W) + T(46, 108, 30, 'R', W) + T(154, 108, 30, 'R', W), 'Railroad crossing pavement marking');
+  const crossbuck = (() => {
+    // words: [[offset along the bar, text], ...]; RAILROAD is split so CROSSING passes over the gap
+    const bar = (deg, words) => {
+      const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+      const pt = (u, v) => `${(80 + u * c - v * s).toFixed(1)},${(55 + u * s + v * c).toFixed(1)}`;
+      return poly([pt(-72, -15), pt(72, -15), pt(72, 15), pt(-72, 15)].join(' '), '#fff', INK, 3) +
+        words.map(([u, w]) => `<text x="0" y="6" font-size="15" font-weight="700" fill="${INK}" text-anchor="middle" ` +
+          `font-family="Arial,Helvetica,sans-serif" transform="translate(${(80 + u * c).toFixed(1)} ${(55 + u * s).toFixed(1)}) rotate(${deg})">${w}</text>`).join('');
+    };
+    return A('Railroad crossbuck sign', bar(32, [[-47, 'RAIL'], [47, 'ROAD']]) + bar(-32, [[0, 'CROSSING']]), '0 0 160 110');
+  })();
+
+  /* --- roundabout --- */
+  const arcArrow = (cx, cy, r, a0, a1, w, c, h) => {
+    const pt = (a) => [cx + r * Math.cos((a * Math.PI) / 180), cy - r * Math.sin((a * Math.PI) / 180)];
+    const [x0, y0] = pt(a0), [x1, y1] = pt(a1 - 4), [xt, yt] = pt(a1);
+    return path(`M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 0 0 ${x1.toFixed(1)} ${y1.toFixed(1)}`, w, c) +
+      arrow(x1, y1, xt, yt, w, c, h);
+  };
+  const roundabout = A('Roundabout diagram: traffic circulates counter-clockwise',
+    rect(0, 0, 200, 200, '#2f6f3e') + rect(82, 0, 36, 200, '#3a3f4a') + rect(0, 82, 200, 36, '#3a3f4a') +
+    circ(100, 100, 56, '#3a3f4a') + circ(100, 100, 26, '#2f6f3e', '#cbd5e1', 2) +
+    [20, 110, 200, 290].map((a) => arcArrow(100, 100, 41, a, a + 62, 4, '#fff', 12)).join(''),
+    '0 0 200 200');
+  const roundSign = A('Roundabout warning sign',
+    diamond(YEL, [90, 210, 330].map((a) => arcArrow(60, 60, 22, a, a + 85, 6, INK, 14)).join('')));
+
+  return {
+    stop, yield: yieldSign, doNotEnter, speed, keepRight, noLeft, noUturn,
+    laneShift, preparedStop, slowMoving, roadClosed, closedThru,
+    t3, cross, signalAhead, merging, twoWay, laneEnds, school, pedestrian, lowClear,
+    railroadAdv, slippery, hill, noPassing, shareRoad, guideGreen, guideBlue, guideBrown,
+    barV: barricade('v'), barLeft: barricade('left'), barRight: barricade('right'),
+    sigRed: signal(1, 0, 0, 'STEADY RED'),
+    sigFlashRed: signal(1, 0, 0, 'FLASHING RED', 'r'),
+    sigRedArrow: signal('L', 0, 0, 'STEADY RED ARROW'),
+    sigYellow: signal(0, 1, 0, 'STEADY YELLOW'),
+    sigFlashYellow: signal(0, 1, 0, 'FLASHING YELLOW', 'y'),
+    sigYellowArrow: signal(0, 'L', 0, 'SOLID YELLOW ARROW'),
+    sigFlashYellowArrow: signal(0, 'L', 0, 'FLASHING YELLOW ARROW', 'y'),
+    sigGreen: signal(0, 0, 1, 'GREEN'),
+    hawkDark: hawk([0, 0, 0], 'DARK'),
+    hawkFlashYellow: hawk([0, 0, 'f'], 'FLASHING YELLOW'),
+    hawkSolidYellow: hawk([0, 0, 1], 'SOLID YELLOW'),
+    hawkRed: hawk([1, 1, 0], 'TWO SOLID RED'),
+    hawkFlashRed: hawk(['f', 'f', 0], 'ALTERNATING FLASHING RED'),
+    dashedYellow, doubleYellow, solidDashed, sharedTurn, edgeLines, whiteSolid, whiteDashed, whiteDouble,
+    bikeLane, bikeDashed, bikeGreen, rrMarking, crossbuck, roundabout, roundSign
+  };
+})();
+
+/* Q(question, correct answer, [three wrong answers], handbook tip, optional art key); cat comes from curCat:
+   'signs' (and anything with an image) feeds Signs & Signals mode, 'rules' and 'general' feed the full test. */
+let curCat = 'general';
+const Q = (q, correct, wrong, tip, img) => ({ q, options: [correct, ...wrong], correct: 0, tip, img, cat: curCat });
+
+curCat = 'signs';
+QUESTION_BANK.push(
+Q("You approach this sign. There is no stop line and no crosswalk. Where must you stop?",
+  "At the point nearest the intersecting highway where you have a view of approaching traffic",
+  ["In the middle of the intersection", "50 feet before the sign", "Only if other vehicles are present"],
+  "With no stop line or crosswalk, stop at the point nearest the intersecting highway where you can see approaching traffic before entering it. (Handbook pg. 44)", "stop"),
+Q("At a stop sign with no stop line, but with a crosswalk, where must you stop?",
+  "Before entering the crosswalk on the near side of the intersection",
+  ["In the middle of the crosswalk", "Past the crosswalk so you can see cross traffic", "At least 15 feet before the crosswalk"],
+  "If there is no stop line, stop before entering the crosswalk on the near side of the intersection. (Handbook pg. 44)"),
+Q("What does this sign require you to do?",
+  "Slow down and yield the right-of-way, stopping if necessary",
+  ["Come to a complete stop every time", "Speed up to merge ahead of other traffic", "Proceed without slowing if you see no police"],
+  "At a yield sign, slow down and yield the right-of-way to vehicles and pedestrians; stop if necessary. (Handbook pg. 44)", "yield"),
+Q("You are approaching a yield sign and pedestrians are in or about to enter the crosswalk. You must:",
+  "Stop until they have crossed, then proceed",
+  ["Slow down and drive around them", "Honk and continue", "Proceed, because pedestrians must yield at yield signs"],
+  "If pedestrians are in or about to enter the crosswalk, stop until they have crossed, then proceed. (Handbook pg. 44-45)"),
+Q("What does this sign mean?",
+  "You may not enter this section of highway from the direction you are traveling",
+  ["Road closed to all traffic ahead", "Stop, then enter when clear", "Only emergency vehicles may enter"],
+  "A Do Not Enter sign means you may not enter that section of highway from the direction you are traveling. (Handbook pg. 45)", "doNotEnter"),
+Q("The number on this sign tells you the:",
+  "Maximum speed on that section of road under ideal driving conditions",
+  ["Minimum speed on that section of road", "Recommended speed for trucks only", "Average speed of traffic"],
+  "A speed limit sign shows the maximum speed limit on a section of road under ideal driving conditions. (Handbook pg. 45)", "speed"),
+Q("What does this sign mean?",
+  "The road ahead is divided; stay on the right side of the island or barrier",
+  ["The right lane ends ahead", "The right lane must turn right", "Keep right unless passing, on any road"],
+  "Keep Right of Island: the road ahead is divided, so stay on the right side of the island or barrier. (Handbook pg. 45)", "keepRight"),
+Q("What does this sign mean?",
+  "Left turns are prohibited here",
+  ["Left turns are allowed only on a green light", "The left lane must turn left", "Yield to left-turning traffic"],
+  "Turn prohibition signs show which turns are not allowed. (Handbook pg. 45)", "noLeft"),
+Q("What does this sign mean?",
+  "U-turns are prohibited here",
+  ["U-turns are allowed only from the right lane", "The road ahead curves sharply", "Yield to U-turning traffic"],
+  "U-turns are not legal where No U-turn signs are posted. (Handbook pg. 45, 73)", "noUturn"),
+Q("Regulatory signs are generally which colors?",
+  "Black and white, although some are red and white",
+  ["Yellow and black", "Green and white", "Orange and black"],
+  "Regulatory signs are generally black and white, although some are red and white. (Handbook pg. 44)"),
+
+);
+curCat = 'signs';
+QUESTION_BANK.push(
+Q("Warning signs in a work zone are:",
+  "Orange and black",
+  ["Yellow and black", "Red and white", "Blue and white"],
+  "Work zones are commonly marked with orange signs, cones, drums, barricades or flashing arrow panels; warning signs there are orange and black. (Handbook pg. 46)"),
+Q("What does this work zone sign tell you?",
+  "All lanes will shift according to the sign; stay in your lane as it shifts",
+  ["The right lane is closed ahead", "A detour begins here", "The road becomes gravel"],
+  "Lane Shift: all lanes will shift according to the sign. Stay in your lane as it shifts slightly. (Handbook pg. 46)", "laneShift"),
+Q("What does this sign tell you?",
+  "Slow down and be prepared to stop for road work ahead",
+  ["The speed limit is increasing", "Stop now and wait for a flagger", "A detour is ahead"],
+  "Be Prepared to Stop: slow down and be prepared to stop for road work ahead. (Handbook pg. 47)", "preparedStop"),
+Q("You see this emblem on the back of a vehicle ahead. What should you do?",
+  "Slow down and approach the vehicle with caution",
+  ["Pass immediately", "Honk to make it move over", "Maintain your speed and follow closely"],
+  "The Slow Moving Vehicle sign is used mainly on farm and construction equipment; slow down and approach with caution. (Handbook pg. 47)", "slowMoving"),
+Q("Who may enter a work zone marked with a \"Road Closed\" sign?",
+  "Only authorized personnel",
+  ["Local residents only", "Anyone traveling under 15 mph", "Any vehicle with its flashers on"],
+  "'Road Closed' signs mean the work zone cannot be entered, except by authorized personnel. (Handbook pg. 47)", "roadClosed"),
+Q("What does this sign mean?",
+  "The work zone is open to local traffic, but others must not use it as a travel route",
+  ["The road is closed to all traffic", "Through traffic has the right-of-way", "Trucks must use the left lane"],
+  "'Road Closed to Thru Traffic' means local residential or commercial traffic may enter, but must not use the work zone as a travel route unless stopping within it. (Handbook pg. 47)", "closedThru"),
+Q("A road is closed for work and a barrier blocks the way. Which is correct?",
+  "Never go around or move barriers or signs to cross a road that is closed to traffic",
+  ["You may move a barrier if no workers are visible", "You may drive around the barrier at 5 mph", "You may cross if you honk first"],
+  "Do not go around or move any barriers or signs to cross over a road that is closed to traffic. (Handbook pg. 46)"),
+Q("Which is a recommended practice when driving through a work zone?",
+  "Leave plenty of space between you and the car ahead",
+  ["Follow closely so you can get through quickly", "Use the stereo to stay alert", "Change lanes often to find the fastest one"],
+  "Do not follow too closely. Speeding, inattentive driving, failing to yield and improper lane changes contribute to work-zone crashes. (Handbook pg. 48)"),
+Q("Speeding fines in a work zone are:",
+  "Increased where the signage indicates",
+  ["The same as anywhere else", "Waived if no workers are present", "Only applied at night"],
+  "Slow down. Fines for speeding are increased in work zones where the signage indicates. (Handbook pg. 48)"),
+Q("A school safety patrol officer displays a STOP sign at a crossing. You must:",
+  "Follow the directions of the school safety patrol",
+  ["Treat it as advice and proceed if clear", "Stop only if children are in the road", "Yield only to buses"],
+  "You must follow any directions issued by a school safety patrol official while driving. (Handbook pg. 48)"),
+
+);
+curCat = 'signs';
+QUESTION_BANK.push(
+Q("Most warning signs are what color and shape?",
+  "Black on yellow and diamond-shaped",
+  ["White on red and octagonal", "Black on white and rectangular", "White on green and rectangular"],
+  "Most warning signs are black on yellow and diamond-shaped. (Handbook pg. 49)"),
+Q("An Open Range warning sign means:",
+  "Livestock have the right-of-way and may roam freely and unfenced",
+  ["You may pass slow vehicles freely", "A scenic overlook is ahead", "Hunting is allowed nearby"],
+  "Open Range: you are traveling in an area where livestock have the right-of-way and may roam freely and unfenced. (Handbook pg. 49)"),
+Q("What must you do when you approach this sign?",
+  "Prepare to turn right or left, and stop and yield to drivers approaching from the other two directions",
+  ["Continue straight; the road never ends", "Yield only to traffic from the left", "Speed up to clear the intersection"],
+  "3-Way Intersection: you will have to turn either right or left, and must stop and yield to drivers from the other two directions. (Handbook pg. 49)", "t3"),
+Q("What does this sign warn you of?",
+  "Another road ahead crosses the road you are on; watch for cross traffic",
+  ["The road ahead ends", "Railroad tracks ahead", "A four-way stop ahead"],
+  "Intersection/Crossroad: another road ahead crosses yours. Watch carefully for cross-traffic. (Handbook pg. 49)", "cross"),
+Q("This sign is used on higher-speed roads or where the view of an intersection or light is blocked. Be ready for:",
+  "An intersection and a stop light",
+  ["A railroad crossing", "A school zone", "A pedestrian beacon"],
+  "Traffic Signal Ahead: be ready for an intersection and a stop light. (Handbook pg. 49)", "signalAhead"),
+Q("If you are on the main road and see this sign, be prepared for:",
+  "Other cars and trucks entering your lane",
+  ["Your lane to end", "Oncoming traffic in your lane", "A stop sign ahead"],
+  "Merging Traffic: be prepared for other cars and trucks entering into your lane. (Handbook pg. 50)", "merging"),
+Q("What does this sign warn about?",
+  "A change from a multi-lane divided highway to a two-lane, two-way highway",
+  ["A new passing lane ahead", "A one-way street ahead", "A road that is closed ahead"],
+  "Two-Way Traffic warns of a transition from a multi-lane divided highway to a two-lane, two-way section. (Handbook pg. 50)", "twoWay"),
+Q("Two lanes of traffic will soon become one, as this sign shows. Who must yield?",
+  "Merging traffic",
+  ["The vehicle in the through lane", "The larger vehicle", "Vehicles on the right always have the right-of-way"],
+  "Lane Ends/Merge Left: two lanes of traffic will soon become one lane. Merging traffic must yield. (Handbook pg. 50)", "laneEnds"),
+Q("Where an Added Lane sign warns that two highways are converging, before moving into the left lane you should:",
+  "Check that it is clear and signal before changing lanes",
+  ["Move over quickly to avoid being cut off", "Stay in the right lane no matter what", "Sound your horn and move over"],
+  "Added Lane: before moving into the left lane (if needed), check that it is clear while signaling before changing lanes. (Handbook pg. 50)"),
+Q("This sign may be yellow or fluorescent yellow-green. Which is true when you pass it?",
+  "There are increased penalties for violating school zone speed limits",
+  ["The speed limit rises to 45 mph", "You may pass stopped vehicles", "It only applies on school days after 5 p.m."],
+  "School Zone: watch for children and the marked school crossing. There are increased penalties for violating school zone speed limits. (Handbook pg. 50)", "school"),
+Q("At a School Crossing sign you should:",
+  "Watch for children, reduce speed, and obey crossing guard signals",
+  ["Speed up to clear the crossing", "Ignore it if no children are visible", "Honk to warn children"],
+  "School Crossing: watch out for children, reduce speed, and obey crossing guard signals. (Handbook pg. 51)"),
+Q("What does this sign mean?",
+  "Watch for people crossing; pedestrians have the right-of-way and you may have to stop",
+  ["A bus stop is ahead", "Pedestrians must yield to vehicles here", "Sidewalk ends ahead"],
+  "Pedestrian Crossing: watch for people crossing the road. Pedestrians have the right-of-way and you may have to stop. (Handbook pg. 51)", "pedestrian"),
+Q("A Divided Highway Begins sign means:",
+  "Two-way traffic ahead will be divided by a center strip",
+  ["The road becomes one-way", "Two-way traffic is no longer divided", "A U-turn is allowed ahead"],
+  "Divided Highway Begins: you are close to where two-way traffic will be divided by a center strip. (Handbook pg. 51)"),
+Q("A Divided Highway Ends sign means:",
+  "Two-way traffic will no longer be divided by a center strip; watch for oncoming cars",
+  ["The road becomes one-way", "The highway turns into a freeway", "Left turns are prohibited"],
+  "Divided Highway Ends: two-way traffic ahead will no longer be divided. Watch out for oncoming cars. (Handbook pg. 51)"),
+Q("What does this sign indicate?",
+  "The overhead clearance above the highway is very low",
+  ["The road ahead is very narrow", "Trucks must use the left lane", "A tunnel is ahead"],
+  "Low Clearance indicates the overhead clearance above the highway is very low. (Handbook pg. 51)", "lowClear"),
+Q("This sign gives you early warning of:",
+  "A railroad crossing ahead; be prepared to stop if a train is approaching",
+  ["A road that ends ahead", "A narrow bridge", "A school bus stop"],
+  "Railroad Crossing: early warning of a crossing ahead. Be prepared to stop before the tracks if a train is approaching. (Handbook pg. 52)", "railroadAdv"),
+Q("What should you do when you see this sign?",
+  "Slow down, because the road may become slippery in wet weather",
+  ["Speed up to get through quickly", "Turn on your high beams", "Stop and wait for the road to dry"],
+  "Slippery When Wet: the road ahead may become slippery in wet weather. Slow down. (Handbook pg. 52)", "slippery"),
+Q("This sign warns that the road goes down a steep hill. You should:",
+  "Check your brakes before going down the hill",
+  ["Shift to neutral to save fuel", "Speed up to build momentum", "Turn on your hazard lights"],
+  "Hill: the road goes down a steep hill. You should check your brakes before going down the hill. (Handbook pg. 52)", "hill"),
+Q("This pennant-shaped sign on the left side of the road warns you of:",
+  "A no passing zone for your lane of traffic",
+  ["A school zone", "A lane that ends", "A passing lane ahead"],
+  "The pennant-shaped No Passing Zone sign is on the left side of the road and warns of a no passing zone for your lane. (Handbook pg. 52)", "noPassing"),
+Q("A \"Share the Road\" sign below a bicycle symbol warns drivers and bicyclists that:",
+  "They need to share the highway, because bike lanes are not provided",
+  ["Bicycles must stay off the highway", "Bicycles have the right-of-way at all times", "Cars may use the bike lane"],
+  "Share the Road is used where bike lanes are not provided, sometimes where lanes or shoulders are narrow or traffic is fast. (Handbook pg. 52)", "shareRoad"),
+Q("An Animal Crossing sign tells you to:",
+  "Watch for animals crossing the highway",
+  ["Expect a petting zoo ahead", "Stop for all animals within 100 feet", "Honk continuously"],
+  "Animal Crossing: watch for animals crossing the highway. (Handbook pg. 53)"),
+Q("The Emergency Notification System sign at a railroad crossing lists:",
+  "The railroad's phone number and the crossing's ID number, to report an emergency or malfunction",
+  ["The maximum train speed", "The 911 dispatch center hours", "The next train's arrival time"],
+  "The Emergency Notification System sign lists the railroad's phone number and the specific crossing number. (Handbook pg. 53)"),
+Q("White-on-green guide signs give:",
+  "Directional and distance information",
+  ["Motorist services", "Historical or scenic points of interest", "Speed limits"],
+  "Guide signs are white on green for directional and distance information. (Handbook pg. 53)", "guideGreen"),
+Q("White-on-blue guide signs show:",
+  "Motorist services such as gas and food",
+  ["Directions and distances", "Scenic or historical sites", "Work zone detours"],
+  "White on blue guide signs mark motorist services. (Handbook pg. 53)", "guideBlue"),
+Q("White-on-brown guide signs show:",
+  "Cultural, historical, or scenic points of interest",
+  ["Motorist services", "Directions and distances", "Construction zones"],
+  "White on brown guide signs mark cultural, historical, or scenic points of interest. (Handbook pg. 53)", "guideBrown"),
+
+);
+curCat = 'signs';
+QUESTION_BANK.push(
+Q("The V-shaped pattern on this barricade means:",
+  "The road is closed and traffic can proceed no further",
+  ["Pass on either side", "Merge into one lane", "Yield to oncoming traffic"],
+  "The V-shaped pattern means the road is closed and traffic can proceed no further. (Handbook pg. 54)", "barV"),
+Q("The stripes on this barricade angle down to the left. You must:",
+  "Pass the barricade on the left side",
+  ["Pass the barricade on the right side", "Stop; the road is closed", "Yield to traffic on the right"],
+  "Lines angling down to the left mean traffic must pass the barricade on the left side. (Handbook pg. 54)", "barLeft"),
+Q("The stripes on this barricade angle down to the right. You must:",
+  "Pass the barricade on the right side",
+  ["Pass the barricade on the left side", "Stop; the road is closed", "Yield to traffic on the left"],
+  "Lines angling down to the right mean traffic must pass the barricade on the right side. (Handbook pg. 54)", "barRight"),
+Q("What is the difference between red-and-white and orange-and-white barricades?",
+  "Red and white are permanent and orange and white are temporary; the instructions are the same",
+  ["Red and white mean stop; orange and white mean caution", "Orange and white are for night use only", "Red and white apply only on highways"],
+  "Barricades are red and white (permanent) or orange and white (temporary). The instructions they give are the same. (Handbook pg. 54)"),
+
+);
+curCat = 'signs';
+QUESTION_BANK.push(
+Q("On a vertical traffic signal, the lights from top to bottom are:",
+  "Red, yellow, green",
+  ["Green, yellow, red", "Yellow, red, green", "Red, green, yellow"],
+  "Vertical traffic lights have red at the top, yellow in the middle and green at the bottom. (Handbook pg. 55)"),
+Q("On a horizontal traffic signal, the red light is on the:",
+  "Far left",
+  ["Far right", "Middle", "Top left"],
+  "Horizontal traffic lights have red on the far left, yellow in the middle and green on the far right. (Handbook pg. 55)"),
+Q("You face this signal. After stopping, what may you do?",
+  "Turn right after yielding to cross traffic and pedestrians, unless a \"no turn on red\" sign is posted",
+  ["Proceed straight if no cars are coming", "Turn left or right with no need to yield", "Nothing until the light turns green, always"],
+  "Come to a complete stop. You may turn on red unless posted 'no turn on red.' (Handbook pg. 55)", "sigRed"),
+Q("What does a flashing red light mean?",
+  "Stop, yield to cross traffic and pedestrians, then proceed when clear",
+  ["Slow down and proceed with caution", "A protected turn is allowed", "The signal is broken; go ahead"],
+  "A flashing red indication means stop. Yield to cross traffic or pedestrians, then proceed when clear. (Handbook pg. 55)", "sigFlashRed"),
+Q("A steady red arrow pointing left means:",
+  "No left turn is permitted until a green or yellow light allows movement",
+  ["You may turn left after stopping", "You may turn left if no cars are coming", "Yield, then turn left"],
+  "While a steady red arrow is displayed, no turn is permitted in the direction of the arrow. (Handbook pg. 55)", "sigRedArrow"),
+Q("A steady yellow light means:",
+  "The signal is about to change to red; stop if you can do so safely",
+  ["Speed up to clear the intersection", "Proceed with caution", "Yield, then proceed"],
+  "A yellow light warns that the signal is about to change to red. If you can stop safely, do so; if already in the intersection, clear it safely. (Handbook pg. 55)", "sigYellow"),
+Q("A flashing yellow light means:",
+  "Slow down, look carefully for hazards, and proceed with caution",
+  ["Stop and wait for green", "The signal is about to turn red", "Cross traffic must stop"],
+  "A flashing circular yellow indication means caution. Slow down and look for hazards. (Handbook pg. 55)", "sigFlashYellow"),
+Q("You are already making a turn when a solid yellow arrow appears. You should:",
+  "Continue the turn and clear the intersection safely",
+  ["Stop in the intersection", "Back up to the stop line", "Speed up to beat the red"],
+  "A solid yellow arrow means the turn signal is changing. If you are already in the intersection, continue the turn and clear it safely. (Handbook pg. 55)", "sigYellowArrow"),
+Q("What does a flashing yellow arrow mean?",
+  "You may turn after yielding to oncoming traffic and pedestrians in crosswalks",
+  ["Protected turn: oncoming traffic is stopped", "Stop and wait for green", "The signal is about to turn red"],
+  "A flashing yellow arrow means turns are allowed after yielding to oncoming traffic and pedestrians in crosswalks. (Handbook pg. 56)", "sigFlashYellowArrow"),
+Q("You are in the left-turn lane and the light is a green circle. You must:",
+  "Yield to oncoming traffic and pedestrians in crosswalks before turning left",
+  ["Turn left immediately; you have the right-of-way", "Wait for a green arrow", "Stop and wait for red"],
+  "On a green circular light, a left-turning driver must yield to oncoming traffic and pedestrians in crosswalks. (Handbook pg. 56)", "sigGreen"),
+Q("The light turns green, but traffic ahead is backed up through the intersection. You should:",
+  "Not enter unless there is enough space on the other side to clear the intersection",
+  ["Enter and stop in the crosswalk", "Enter so you do not miss the light", "Honk at the cars ahead"],
+  "Do not enter the intersection unless there is sufficient space on the other side for your vehicle to pass completely through, regardless of the signal. (Handbook pg. 56)"),
+Q("A \"doghouse\" signal is most commonly used to show:",
+  "Protected left turns; yellow means the protected left turn is ending",
+  ["A railroad crossing", "A pedestrian crossing", "A school zone"],
+  "A doghouse signal is most commonly used to indicate protected left turns. The yellow light indicates the protected left turn movement is ending. (Handbook pg. 56)"),
+Q("A pedestrian hybrid beacon (HAWK) has:",
+  "Two red lenses over a single yellow lens",
+  ["Three green lenses", "One red lens over two yellow lenses", "Two yellow lenses over one green lens"],
+  "The Pedestrian Hybrid Beacon consists of two red lenses positioned over a single yellow lens. (Handbook pg. 56)"),
+Q("A pedestrian hybrid beacon is unlit. You may:",
+  "Proceed if the crosswalk is clear",
+  ["Stop until it turns on", "Proceed only after honking", "Stop; it's a four-way stop"],
+  "The signal is unlit until a pedestrian pushes the button; when it is dark again, normal vehicle traffic can resume. (Handbook pg. 57)", "hawkDark"),
+Q("A pedestrian hybrid beacon shows a flashing yellow light. You should:",
+  "Slow down; this warns drivers approaching the crosswalk",
+  ["Stop completely", "Speed up before it turns red", "Pass any stopped vehicle"],
+  "A pedestrian has pushed the button; the flashing yellow warns approaching drivers to slow down. (Handbook pg. 57)", "hawkFlashYellow"),
+Q("A pedestrian hybrid beacon shows a solid yellow light. This means:",
+  "Prepare to stop",
+  ["Proceed with caution", "Stop only if pedestrians are visible", "The beacon is malfunctioning"],
+  "The flashing yellow is followed by a solid yellow, telling drivers to prepare to stop. (Handbook pg. 57)", "hawkSolidYellow"),
+Q("A pedestrian hybrid beacon shows two solid red lights. You must:",
+  "Stop at the stop line and remain stopped while the lights are steady red",
+  ["Slow down and proceed if clear", "Stop only if a pedestrian is crossing", "Turn right on red only"],
+  "Two solid red lights tell drivers to stop at the stop line. Vehicles must stop completely while the lights are steady red. (Handbook pg. 57)", "hawkRed"),
+Q("A pedestrian hybrid beacon's red lights flash alternately. You must:",
+  "Stop, yield to pedestrians in the crosswalk, and proceed when the crosswalk is clear",
+  ["Proceed with caution", "Stop until the light turns green", "Honk and continue"],
+  "When the red lights flash alternately, the driver must stop, yield to pedestrians, and proceed when the crosswalk is clear. (Handbook pg. 57)", "hawkFlashRed"),
+
+);
+curCat = 'signs';
+QUESTION_BANK.push(
+Q("A dashed yellow center line means:",
+  "Vehicles in either lane can cross the line if it is safe",
+  ["No one may cross", "Only vehicles turning may cross", "Passing is prohibited"],
+  "A dashed yellow line means vehicles in either lane can cross it if it is safe to do so. (Handbook pg. 58)", "dashedYellow"),
+Q("Two solid yellow lines mean:",
+  "Neither lane may cross, except to turn when safe; no passing",
+  ["Either lane may pass", "Only the left lane may pass", "Traffic travels one way"],
+  "Neither lane can cross unless turning. You may cross a double yellow when turning left into or out of a driveway or business entrance. No passing is allowed. (Handbook pg. 58)", "doubleYellow"),
+Q("The yellow lines are solid on side A and dashed on side B. Who may cross to pass?",
+  "Only the driver on side B, next to the dashed line",
+  ["Only the driver on side A", "Both drivers", "Neither driver"],
+  "With one solid and one dashed yellow line, only vehicles in the lane with the dashed line may cross to pass. (Handbook pg. 58)", "solidDashed"),
+Q("A center lane marked on each side by a solid and a dashed yellow line is:",
+  "Reserved for left turns (or U-turns where permitted) from either direction",
+  ["A passing lane", "A lane for through traffic", "An emergency lane"],
+  "Shared center lanes are reserved for left turns (or U-turns where permitted). You may not travel in them or interfere with a vehicle preparing to turn. (Handbook pg. 58)", "sharedTurn"),
+Q("Solid white lines along the sides of the road show:",
+  "Where the edge of the road is, which helps you stay on the road at night or in bad weather",
+  ["Where you may park", "Where passing is allowed", "A bike lane"],
+  "Edge lines show the edge of the road and help you stay on it at night or in bad weather. (Handbook pg. 59)", "edgeLines"),
+Q("A solid white line separates two lanes going in the same direction. You should:",
+  "Avoid changing lanes there",
+  ["Change lanes only to pass", "Change lanes whenever you wish", "Straddle the line to prepare"],
+  "Avoid changing lanes where a solid white line separates lanes of traffic moving in the same direction. (Handbook pg. 59)", "whiteSolid"),
+Q("Dashed white lines separate lanes going in the same direction. You should:",
+  "Drive within them, never straddle them, and cross only when it is safe to change lanes",
+  ["Straddle them to let others pass", "Never cross them", "Cross them only to turn left"],
+  "Drive within the lines. Never straddle them. Cross over only when it is safe to change lanes. (Handbook pg. 59)", "whiteDashed"),
+Q("Double solid white lane lines mean:",
+  "Lane changes are prohibited",
+  ["Lane changes are allowed when safe", "Bicycles only", "Parking allowed"],
+  "Lane changes are prohibited in areas with double solid white lines. (Handbook pg. 59)", "whiteDouble"),
+Q("A solid white line with a bicycle symbol along the road's side indicates:",
+  "An area for bicycle traffic only, traveling in the same direction as adjacent traffic",
+  ["A parking area for bicycles", "A lane open to cars when needed", "Bicycles may travel against traffic"],
+  "A solid white line with a bicycle insignia marks an area designated for bicycle traffic only. Bicycles must travel in the same direction as adjacent traffic. (Handbook pg. 59)", "bikeLane"),
+Q("At an intersection, the bike lane line becomes dashed. A bike is already in the area, and you are turning right. You must:",
+  "Yield to the bicyclist",
+  ["Merge right ahead of the bicycle", "Honk and turn right", "Stop in the bike lane"],
+  "Dashed bike lane lines mean right-turning drivers can merge right. If a bike is already in that area, right-turning drivers must yield. (Handbook pg. 59-60)", "bikeDashed"),
+Q("What does green paint in a bicycle lane mean?",
+  "It emphasizes where bikes and vehicles cross paths; watch for bikes",
+  ["Bicyclists must stop here", "Cars may park here", "The bike lane ends"],
+  "Green paint emphasizes where two movements cross. Drivers must be aware that bikes may be present. (Handbook pg. 60)", "bikeGreen"),
+
+);
+curCat = 'rules';
+QUESTION_BANK.push(
+Q("An X and the letters RR painted on the pavement ahead means:",
+  "A railroad crossing is ahead",
+  ["A railroad crossing is behind you", "A no passing zone", "A rest area is ahead"],
+  "Pavements are often marked in advance of a crossing with an X and the letters RR. (Handbook pg. 61)", "rrMarking"),
+Q("What is the white X-shaped sign at most railroad crossings called?",
+  "A cross buck",
+  ["A yield sign", "A pedestrian crossing sign", "A school sign"],
+  "Railroad cross buck signs can be found at most crossings. (Handbook pg. 61)", "crossbuck"),
+Q("When required to stop at a railroad crossing, you should stop:",
+  "Within 50 feet but no less than 15 feet from the nearest rail",
+  ["On the tracks", "At least 5 feet from the nearest rail", "Within 100 feet but no closer than 50 feet"],
+  "When required to stop, you should do so within 50 feet but no less than 15 feet from the nearest rail of the crossing. (Handbook pg. 60)"),
+Q("A collision between a train and a vehicle is how much more likely to cause death or serious injury than other highway crashes?",
+  "40 times greater",
+  ["5 times greater", "10 times greater", "100 times greater"],
+  "The chance of death or serious injury in a train-vehicle collision is 40 times greater than for other highway crashes. (Handbook pg. 60)"),
+Q("How far does a 150-car freight train traveling 50 mph need to stop?",
+  "About 7,000 feet (1 1/3 miles)",
+  ["About 500 feet", "About 1,000 feet", "About 2,000 feet"],
+  "The stopping distance for a 150-car freight train at 50 mph is 7,000 feet, or 1 1/3 miles. (Handbook pg. 60)"),
+Q("The flashing lights at a railroad crossing are active. You must:",
+  "Stop, and proceed only when you can do so safely",
+  ["Slow down and cross if you do not see a train", "Cross quickly before the gates lower", "Go around the lights"],
+  "You must stop when the lights are actively flashing and may only proceed when you can do so safely. (Handbook pg. 61)"),
+Q("At a railroad crossing, you must never drive:",
+  "Through, under, or around a crossing gate that is lowered or being lowered",
+  ["With your windows down", "Faster than 5 mph", "In the right lane"],
+  "You must never drive through, under or around a crossing gate that is lowered or being lowered. (Handbook pg. 61)"),
+Q("Which is a railroad crossing safety tip?",
+  "Never shift gears while crossing, because the vehicle may stall on the tracks",
+  ["Shift to a lower gear on the tracks", "Stop on the tracks to look both ways", "Race the train when the gates are up"],
+  "Never shift gears while driving through a crossing; this may cause your vehicle to stall on the tracks. (Handbook pg. 61)"),
+Q("After one train passes a crossing, you should:",
+  "Watch for a second train before proceeding",
+  ["Proceed as soon as the lights stop", "Cross immediately", "Honk and cross"],
+  "Watch out for a second train. Do not proceed until you are sure no train is approaching on another track. (Handbook pg. 61)"),
+Q("When traffic is backed up near a crossing, you should never proceed across the tracks unless:",
+  "There is adequate room for the full length of your vehicle on the other side",
+  ["The gates are down", "You are in the left lane", "You use your hazards"],
+  "When in traffic, never proceed across the tracks unless there is adequate room for the full length of your vehicle. (Handbook pg. 61)"),
+Q("Which vehicles are required to stop at all railroad crossings?",
+  "Some buses and trucks",
+  ["All passenger cars", "Only motorcycles", "Only emergency vehicles"],
+  "Watch out for vehicles that must stop at crossings. Some buses and trucks are required to stop at all railroad crossings. (Handbook pg. 61)"),
+
+);
+curCat = 'rules';
+QUESTION_BANK.push(
+Q("Which way does traffic travel in a roundabout?",
+  "Counter-clockwise, one way around the center island",
+  ["Clockwise", "Either direction", "Straight across the center"],
+  "A roundabout is a one-way circular intersection. Drivers enter counter-clockwise and merge into the circle. (Handbook pg. 62)", "roundabout"),
+Q("Who has the right-of-way in a roundabout?",
+  "Vehicles already in the circle",
+  ["Vehicles entering the circle", "The largest vehicle", "The fastest vehicle"],
+  "All drivers must yield the right-of-way to vehicles already in the circle. (Handbook pg. 62)"),
+Q("You enter a roundabout and need to turn left. You should:",
+  "Turn right to enter, then circulate counter-clockwise around the island to your exit",
+  ["Turn left across the center island", "Enter on the left side of the circle", "Circle clockwise to the left"],
+  "You must always turn right to enter and exit, and circulate counter-clockwise whether you are turning right or left, making a U-turn, or going straight. (Handbook pg. 62)"),
+Q("A yellow warning sign with an arrow in a circle pattern means:",
+  "A roundabout is ahead",
+  ["A U-turn is allowed", "A railroad crossing is ahead", "A rotating work zone is ahead"],
+  "The most common sign seen when approaching a roundabout is a warning sign with an arrow in a circle pattern. (Handbook pg. 62)", "roundSign"),
+Q("When driving in a roundabout, you must yield to traffic from which direction?",
+  "Your left, already in the roundabout",
+  ["Your right", "Straight ahead", "No one; roundabouts have no yielding"],
+  "Yield to traffic on your left already in the roundabout. (Handbook pg. 62)"),
+Q("As you approach your exit in a roundabout, you should:",
+  "Turn on your right turn signal",
+  ["Turn on your left turn signal", "Turn on your hazard lights", "Stop in the circle"],
+  "As you approach your exit, turn your right turn signal on. (Handbook pg. 62)"),
+Q("When entering and exiting a roundabout, you must also yield to:",
+  "Pedestrians and bicyclists",
+  ["No one", "Only buses", "Vehicles behind you"],
+  "Yield to pedestrians and bicyclists when entering and exiting the roundabout. (Handbook pg. 62)"),
+Q("Inside a roundabout, you should:",
+  "Slow down, keep your speed low, and obey all signs and pavement markings",
+  ["Speed up to merge", "Stop to let others in", "Change lanes freely"],
+  "Slow down, obey all traffic signs and pavement markings, and keep your speed low. (Handbook pg. 62)"),
+Q("At a thru-turn intersection, how do you make a left turn?",
+  "Continue through, make a U-turn downstream at the next signal, return, and turn right",
+  ["Turn left from the center lane", "Stop and wait for a gap", "It is not possible"],
+  "A thru-turn prohibits direct left turns. Continue through, U-turn downstream as directed, head back, and turn right. (Handbook pg. 63)"),
+Q("A single point urban interchange (SPUI) gets its name from:",
+  "Traffic signals that control turns from a single point at the center of the interchange",
+  ["A single lane in each direction", "Its use of one overpass", "A one-way ramp system"],
+  "A SPUI gets its name from the signals that control turns from a 'single point' at the center of the interchange. (Handbook pg. 64)"),
+Q("You exit a freeway by mistake at a single point urban interchange. You:",
+  "Cannot go straight across; turn left or right and find a safe place to turn around",
+  ["May drive straight across to the other entrance", "May back up the exit ramp", "May make a U-turn at the stop line"],
+  "If you exit by mistake, you cannot travel straight across the highway and get on at the other side. Turn left or right and find a safe place to turn around. (Handbook pg. 64)"),
+Q("A diverging diamond interchange (DDI):",
+  "Temporarily channels traffic lanes to the left side of the highway",
+  ["Directs all traffic onto one-way ramps", "Has no traffic signals", "Moves traffic to the right side"],
+  "A DDI temporarily channels traffic lanes to the left side of the highway to create direct access with the interstate. (Handbook pg. 65)"),
+Q("At a diverging diamond interchange you should:",
+  "Follow the signs, signals, islands and markings, and stop at the stop lines",
+  ["Ignore the signals and follow traffic", "Stop in the middle of the bridge", "Drive on the right side throughout"],
+  "Follow road signs, signals, raised islands and pavement markings, and stop at the stop lines so you do not impede cross traffic. (Handbook pg. 65)"),
+
+);
+curCat = 'rules';
+QUESTION_BANK.push(
+Q("To turn left, you should:",
+  "Signal, approach in the left-most lane open to your direction, yield to pedestrians and oncoming vehicles, and turn into the nearest lane going your way",
+  ["Approach from the right lane and swing wide", "Cut the corner to save time", "Turn into the farthest lane"],
+  "Signal and approach in the lane closest to the left that is open to your direction. Yield, then turn into the nearest lane. Do not cut the corner. (Handbook pg. 73)"),
+Q("Vehicles turning left must:",
+  "Remain in their lane of travel until after completing the turn",
+  ["Change lanes during the turn", "Straddle the lane line", "Turn into the farthest lane"],
+  "Vehicles turning left must remain in their lane of travel until after completing the turn. (Handbook pg. 73)"),
+Q("When may you turn left at a red light?",
+  "From a one-way street onto a one-way street, after stopping and yielding, unless posted otherwise",
+  ["From any street if no cars are coming", "Never", "Only at night"],
+  "When turning left from a one-way street onto a one-way street, you may proceed from a steady red after stopping and yielding to cross traffic, unless otherwise posted. (Handbook pg. 73)"),
+Q("U-turns are NOT allowed:",
+  "On a curve or near a hill crest where you cannot be seen from either direction within 500 feet",
+  ["On any two-lane road", "Anywhere in a residential area", "At a green light"],
+  "U-turns may not be made on any curve or near the crest of a hill where your vehicle cannot be seen within 500 feet, or in a no passing zone. (Handbook pg. 73)"),
+Q("In most cases, Idaho law requires you to drive:",
+  "As far to the right side of the road as possible, with exceptions",
+  ["In the center of the road", "On the left side of the road", "In any lane you choose"],
+  "In most cases, the law requires that you stay as far to the right side of the road as possible. (Handbook pg. 74)"),
+Q("Which is an exception allowing you to drive on the left side of the road?",
+  "When preparing to make a left turn",
+  ["When you want a better view of oncoming traffic", "When you are driving slowly on a two-lane road", "When the road is empty"],
+  "Exceptions include preparing to make a left turn, passing, one-way roads, and roads with two or more lanes in the same direction. (Handbook pg. 74)"),
+Q("Motor vehicles must yield to a pedestrian when:",
+  "The pedestrian is in a marked or unmarked crosswalk at an intersection",
+  ["The pedestrian is crossing mid-block with no crosswalk", "A traffic signal directs the pedestrian to wait", "The pedestrian is jaywalking"],
+  "Motor vehicles must yield to a pedestrian in a marked or unmarked crosswalk at an intersection, or when entering a street from an alley or driveway. (Handbook pg. 75)"),
+Q("Pedestrians must yield to motor vehicles when:",
+  "Crossing a street where there is no crosswalk or intersection",
+  ["The pedestrian is in a crosswalk", "The pedestrian is a blind person with a white cane", "A vehicle is entering from a driveway"],
+  "Pedestrians must yield when crossing where there is no crosswalk or intersection, or when directed by a traffic signal. (Handbook pg. 75)"),
+Q("At a four-way stop, who goes first?",
+  "The first vehicle to arrive; if two arrive together, the vehicle on the left yields to the one on the right",
+  ["The larger vehicle", "The vehicle turning left", "The vehicle on the right yields to the left"],
+  "At four-way stops the first vehicle to arrive has the right-of-way. If two arrive at the same time, the vehicle on the left yields to the one on the right. (Handbook pg. 75)"),
+Q("When making a left turn, you must yield to:",
+  "Oncoming traffic in the intersection, unless a traffic control device directs otherwise",
+  ["Traffic behind you", "Only pedestrians", "No one"],
+  "When making a left turn, always yield to oncoming traffic in the intersection unless directed otherwise by a traffic-control device. (Handbook pg. 76)"),
+Q("Before returning to your lane after passing, you should:",
+  "Signal and wait until you can see the passed vehicle in your rear-view mirror",
+  ["Return immediately after pulling even", "Honk and move over", "Return without signaling"],
+  "Before returning to your own lane, signal and wait until you can see the vehicle you're passing in your rear-view mirror. (Handbook pg. 76)"),
+Q("You should complete a pass before coming within how far of oncoming traffic?",
+  "200 feet",
+  ["50 feet", "100 feet", "500 feet"],
+  "Complete a pass before coming within 200 feet of oncoming traffic. (Handbook pg. 78)"),
+Q("You may pass on the right only when:",
+  "The vehicle ahead is signaling a left turn on a two-lane road, or on a one-way or multi-lane road with two or more lanes in your direction",
+  ["You are in a hurry", "The vehicle ahead is slow", "You can drive on the shoulder"],
+  "Passing on the right is prohibited except when overtaking a left-turning vehicle on a two-lane, two-way road, or on a one-way or multi-lane street with two or more lanes in your direction. (Handbook pg. 77)"),
+Q("You may NOT pass when:",
+  "A vehicle ahead has stopped at a crosswalk to let a pedestrian cross",
+  ["The vehicle ahead is traveling slowly on a clear road", "You are on a multi-lane road", "It is daylight"],
+  "Passing is prohibited when a vehicle ahead has stopped at a marked or unmarked crosswalk to let a pedestrian cross. (Handbook pg. 77)"),
+Q("The vehicle you are passing begins to drift toward you. You should:",
+  "Use your horn",
+  ["Speed up and cut in", "Brake hard", "Flash your high beams"],
+  "If the vehicle you're passing begins to drift toward you, use your horn. (Handbook pg. 78)"),
+Q("When another driver is passing you, you should:",
+  "Move to the right side of your lane and maintain a steady speed or slow down",
+  ["Speed up", "Move to the left side of your lane", "Brake hard"],
+  "Help other drivers pass safely. Move to the right side of your lane, don't speed up, and maintain a steady speed or slow down. (Handbook pg. 78)"),
+Q("If you see a funeral procession, you should:",
+  "Not drive between or join the vehicles unless authorized by a police officer",
+  ["Drive between the vehicles", "Join the procession", "Pass using the right lane on any road"],
+  "Do not drive between or join vehicles in a funeral procession unless authorized by a police officer. (Handbook pg. 78)"),
+Q("On a freeway, which lane should you use most of the time?",
+  "The far right or center lane",
+  ["The far left lane", "The shoulder", "The lane with the fastest cars"],
+  "Most of the time you should drive in the far right or center lane of the freeway. The left lane is for higher-speed traffic and passing. (Handbook pg. 85)"),
+Q("During rush hour on a freeway, you should avoid the:",
+  "Right lane, to leave room for drivers entering the freeway",
+  ["Left lane", "Center lane", "HOV lane"],
+  "During rush hours, avoid the right lane to allow room for drivers entering the freeway. (Handbook pg. 85)"),
+Q("The left lane of a freeway is meant for:",
+  "Higher-speed traffic and passing",
+  ["Slow trucks", "Merging", "Parking in emergencies"],
+  "The left lane is for higher-speed traffic and passing. (Handbook pg. 85)"),
+Q("About how far before your freeway exit should you signal and move into the lane nearest the exit?",
+  "About a half mile",
+  ["About 100 feet", "About 1,000 feet after the exit", "At the exit"],
+  "About a half mile before the exit, signal and move into the lane nearest the exit, then into the deceleration lane. (Handbook pg. 86)"),
+Q("The five-step procedure for starting from the curb or changing lanes begins with:",
+  "Checking mirrors, then signaling for the required five seconds or 100 feet",
+  ["Honking the horn", "Accelerating", "Turning on your hazards"],
+  "Always: check mirrors, signal for the required five seconds or 100 feet, then glance over your shoulder in the direction you're going to move. (Handbook pg. 87)")
+);
+
+const MODES = {
+  full:  { size: 20, title: 'Exam Complete', pool: (q) => true },
+  signs: { size: 40, title: 'Signs & Signals Complete', pool: (q) => q.cat === 'signs' || !!q.img }
+};
+let currentMode = 'full';
 let currentQuestions = [];
 let currentIndex = 0;
 let score = 0;
@@ -759,9 +1571,16 @@ function shuffle(array) {
   return arr;
 }
 
-function startQuiz() {
-  const shuffledBank = shuffle(QUESTION_BANK);
-  const selected = shuffledBank.slice(0, Math.min(TEST_SIZE, shuffledBank.length));
+function showMenu() {
+  ['quizCard', 'progressContainer', 'resultsScreen'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+  document.getElementById('menuScreen').style.display = 'block';
+}
+
+function startQuiz(mode) {
+  currentMode = MODES[mode] ? mode : 'full';
+  const cfg = MODES[currentMode];
+  const shuffledBank = shuffle(QUESTION_BANK.filter(cfg.pool));
+  const selected = shuffledBank.slice(0, Math.min(cfg.size, shuffledBank.length));
   currentQuestions = selected.map(item => {
     const optionsWithOrig = item.options.map((opt, idx) => ({ text: opt, isCorrect: idx === item.correct }));
     const shuffledOptions = shuffle(optionsWithOrig);
@@ -770,12 +1589,14 @@ function startQuiz() {
       q: item.q,
       options: shuffledOptions.map(o => o.text),
       correct: newCorrect,
-      tip: item.tip
+      tip: item.tip,
+      img: item.img
     };
   });
   currentIndex = 0;
   score = 0;
   hasAnswered = false;
+  document.getElementById('menuScreen').style.display = 'none';
   document.getElementById('quizCard').style.display = 'block';
   document.getElementById('progressContainer').style.display = 'block';
   document.getElementById('resultsScreen').style.display = 'none';
@@ -785,9 +1606,12 @@ function startQuiz() {
 function renderQuestion() {
   hasAnswered = false;
   const qData = currentQuestions[currentIndex];
-  document.getElementById('questionNum').innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
+  document.getElementById('questionNum').innerText = `${currentMode === 'signs' ? 'Sign' : 'Question'} ${currentIndex + 1} of ${currentQuestions.length}`;
   document.getElementById('currentScore').innerText = `Score: ${score}/${currentIndex}`;
   document.getElementById('questionText').innerText = qData.q;
+  const imgEl = document.getElementById('questionImg');
+  imgEl.innerHTML = qData.img ? ART[qData.img] : '';
+  imgEl.style.display = qData.img ? 'flex' : 'none';
   const pct = (currentIndex / currentQuestions.length) * 100;
   document.getElementById('progressBar').style.width = `${pct}%`;
   const container = document.getElementById('optionsContainer');
@@ -853,21 +1677,34 @@ function showResults() {
   const pct = Math.round((score / currentQuestions.length) * 100);
   document.getElementById('scorePercent').innerText = `${pct}%`;
   document.getElementById('scoreFraction').innerText = `${score} / ${currentQuestions.length}`;
-  const passed = pct >= 85; // Idaho allows max 6 misses out of 40 (85%)
+  document.querySelector('#resultsScreen h2').innerText = MODES[currentMode].title;
   const badge = document.getElementById('statusBadge');
   const summary = document.getElementById('summaryMessage');
-  if (passed) {
-    badge.className = 'pass-tag pass';
-    badge.innerText = 'PASSING SCORE (85%+)';
-    summary.innerText = 'Great job! You meet or exceed the state requirement for the knowledge test.';
+  const rating = document.getElementById('ratingText');
+  const passed = pct >= 85; // Idaho allows max 6 misses out of 40 (85%)
+  badge.className = 'pass-tag ' + (passed ? 'pass' : 'fail');
+  if (currentMode === 'signs') {
+    const tiers = [
+      [95, 'Sign Master', 'Outstanding. You can read the road like a pro.'],
+      [85, 'Road Ready', 'Solid. You are at or above the 85% passing mark.'],
+      [70, 'Getting There', 'Close. Review the signs you missed and try again.'],
+      [0, 'Back to the Handbook', 'Study the signs section of the handbook, then try again.']
+    ];
+    const [, name, msg] = tiers.find(t => pct >= t[0]);
+    rating.innerText = name;
+    badge.innerText = passed ? 'PASSING RANGE (85%+)' : 'BELOW PASSING (< 85%)';
+    summary.innerText = msg;
   } else {
-    badge.className = 'pass-tag fail';
-    badge.innerText = 'NEEDS REVIEW (< 85%)';
-    summary.innerText = 'Idaho requires 85% to pass (no more than 6 errors on 40 questions). Review the missed items and try again!';
+    rating.innerText = '';
+    badge.innerText = passed ? 'PASSING SCORE (85%+)' : 'NEEDS REVIEW (< 85%)';
+    summary.innerText = passed
+      ? 'Great job! You meet or exceed the state requirement for the knowledge test.'
+      : 'Idaho requires 85% to pass (no more than 6 errors on 40 questions). Review the missed items and try again!';
   }
 }
 
-startQuiz();
+showMenu();
 </script>
+<script src="https://0utrider.github.io/pathfinder/coffeefooter/footer.js" data-mode="button" defer></script>
 </body>
 </html>

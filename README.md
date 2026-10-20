@@ -15,6 +15,7 @@ Teaching a teen to drive is terrifying enough - studying for the test shouldn't 
 
 ## ✨ Features
 - Dynamic 20-Question Quizzes: Pulls a randomized set of 20 questions from the pool every time you start.
+- Sign & Signal Recognition: Image-based questions on regulatory, warning, and work zone signs, barricades, traffic signals, pavement markings, railroad crossings, and roundabouts, plus lane, passing, and freeway rules.
 - Shuffled Options: Both the questions and their multiple-choice answer orders are randomized to prevent rote memorization by position.
 - Instant Feedback: Answers and explanations are revealed right after selection so learning happens immediately.
 - Running Score Tracker: Keeps a live tally of correct/incorrect answers until the quiz is finished.
