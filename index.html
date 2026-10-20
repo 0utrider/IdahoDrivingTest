@@ -274,6 +274,32 @@ header p {
 .mode-btn small { display: block; margin-top: 4px; font-weight: 400; font-size: 0.82rem; color: var(--text-muted); }
 .restart-btn.secondary { background-color: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px; }
 .rating { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin: 4px 0 8px; }
+.fx-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10000; }
+.fx-sign {
+  display: none;
+  position: fixed;
+  top: 28%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-3deg);
+  z-index: 10001;
+  max-width: 88vw;
+  padding: 18px 26px;
+  text-align: center;
+  background: #ffd400;
+  color: #111;
+  border: 5px solid #111;
+  border-radius: 14px;
+  box-shadow: 0 0 0 4px #ffd400, 0 12px 40px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  animation: signPop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.fx-sign .t { font-size: 1.9rem; font-weight: 800; letter-spacing: 0.5px; }
+.fx-sign .s { font-size: 0.95rem; margin-top: 4px; }
+@keyframes signPop {
+  from { transform: translate(-50%, -50%) rotate(-3deg) scale(0.2); opacity: 0; }
+  to { transform: translate(-50%, -50%) rotate(-3deg) scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .fx-sign { animation: none; } }
 .site-footer {
   text-align: center;
   margin-top: 24px;
@@ -332,6 +358,8 @@ header p {
 <button class="restart-btn" onclick="startQuiz(currentMode)">Try Again (same mode)</button>
 <button class="restart-btn secondary" onclick="showMenu()">Main Menu</button>
 </div>
+<canvas id="fx" class="fx-canvas" style="display:none" aria-hidden="true"></canvas>
+<div id="fxSign" class="fx-sign" role="status" onclick="FX.stop()"><div class="t">Keep trying!</div><div class="s">Every practice run gets you closer. You've got this!</div></div>
 <footer class="site-footer">
 <a href="https://github.com/0utrider/IdahoDrivingTest" target="_blank" rel="noopener noreferrer">About this quiz</a>
 </footer>
@@ -1571,12 +1599,149 @@ function shuffle(array) {
   return arr;
 }
 
+/* ---------- Pass / fail effects: confetti, fireworks, poo + angry rain, "Keep trying!" sign ---------- */
+const FX = (() => {
+  const cv = document.getElementById('fx');
+  const ctx = cv.getContext('2d');
+  const sign = document.getElementById('fxSign');
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#ec4899', '#facc15'];
+  const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  let parts = [], rockets = [], spawners = [], raf = 0, lastT = 0, signTimer = 0;
+
+  function resize() {
+    const d = window.devicePixelRatio || 1;
+    cv.width = Math.round(innerWidth * d);
+    cv.height = Math.round(innerHeight * d);
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+
+  function stop() {
+    cancelAnimationFrame(raf);
+    raf = 0; parts = []; rockets = []; spawners = [];
+    clearTimeout(signTimer);
+    sign.style.display = 'none';
+    cv.style.display = 'none';
+  }
+
+  function run(spawner) {
+    if (reduced()) return;
+    spawners.push(spawner);
+    if (!raf) {
+      resize();
+      cv.style.display = 'block';
+      lastT = 0;
+      raf = requestAnimationFrame(frame);
+    }
+  }
+
+  const confettiBit = (x, y, vx, vy, g) => parts.push({
+    k: 'c', x, y, vx, vy, g, drag: 1.2, rot: rnd(0, 6.28), vr: rnd(-8, 8), flip: rnd(0, 6.28), vf: rnd(4, 10),
+    w: rnd(6, 11), h: rnd(10, 16), color: pick(COLORS)
+  });
+
+  function explode(x, y) {
+    const color = pick(COLORS);
+    for (let i = 0; i < 70; i++) {
+      const a = rnd(0, 6.283), s = rnd(60, 260);
+      const life = rnd(0.9, 1.6);
+      parts.push({ k: 's', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, g: 140, drag: 1.4, life, max: life, r: rnd(1.5, 3), color: Math.random() < 0.2 ? '#fff' : color });
+    }
+  }
+
+  function frame(t) {
+    const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0.016;
+    lastT = t;
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+    spawners = spawners.filter((s) => {
+      if (s.until === undefined) s.until = t + s.ms;
+      if (t >= s.until) return false;
+      s.fn(dt);
+      return true;
+    });
+
+    rockets = rockets.filter((r) => {
+      r.vy += 500 * dt; r.y += r.vy * dt;
+      if (r.vy >= -60 || r.y < r.top) { explode(r.x, r.y); return false; }
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(r.x, r.y, 2.5, 0, 6.283); ctx.fill();
+      return true;
+    });
+
+    parts = parts.filter((p) => {
+      p.vx -= p.vx * p.drag * dt;
+      p.vy += p.g * dt - p.vy * p.drag * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.life !== undefined) { p.life -= dt; if (p.life <= 0) return false; }
+      if (p.y > innerHeight + 60) return false;
+      p.rot = (p.rot || 0) + (p.vr || 0) * dt;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      if (p.k === 'c') {
+        p.flip += p.vf * dt;
+        ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.flip));
+        ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      } else if (p.k === 's') {
+        ctx.globalAlpha = Math.max(0, p.life / p.max);
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(0, 0, p.r, 0, 6.283); ctx.fill();
+      } else {
+        ctx.rotate(p.rot);
+        ctx.font = `${p.size}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(p.ch, 0, 0);
+      }
+      ctx.restore();
+      return true;
+    });
+
+    if (spawners.length || rockets.length || parts.length) raf = requestAnimationFrame(frame);
+    else { raf = 0; cv.style.display = 'none'; }
+  }
+
+  return {
+    stop,
+    confetti() {
+      for (const side of [0, 1]) {
+        for (let i = 0; i < 70; i++) {
+          const x = side ? innerWidth + 5 : -5;
+          confettiBit(x, innerHeight + 5, (side ? -1 : 1) * rnd(120, 520), -rnd(500, 950), 700);
+        }
+      }
+      run({ ms: 3500, fn: () => { for (let i = 0; i < 4; i++) confettiBit(rnd(0, innerWidth), -12, rnd(-50, 50), rnd(60, 200), 180); } });
+    },
+    fireworks() {
+      let acc = 0.45;
+      run({ ms: 6000, fn: (dt) => {
+        acc += dt;
+        if (acc < 0.4) return;
+        acc = rnd(0, 0.15);
+        rockets.push({ x: rnd(innerWidth * 0.1, innerWidth * 0.9), y: innerHeight, vy: -rnd(650, 900), top: rnd(innerHeight * 0.12, innerHeight * 0.45) });
+      } });
+    },
+    rain() {
+      run({ ms: 5000, fn: () => {
+        if (Math.random() < 0.35) parts.push({ k: 'e', ch: Math.random() < 0.5 ? '\u{1F4A9}' : '\u{1F621}', size: rnd(30, 60), x: rnd(0, innerWidth), y: -40, vx: rnd(-20, 20), vy: rnd(140, 320), g: 0, drag: 0, rot: rnd(-0.5, 0.5), vr: rnd(-2, 2) });
+      } });
+    },
+    sign() {
+      sign.style.display = 'block';
+      clearTimeout(signTimer);
+      signTimer = setTimeout(() => { sign.style.display = 'none'; }, 6000);
+    }
+  };
+})();
+
 function showMenu() {
+  FX.stop();
   ['quizCard', 'progressContainer', 'resultsScreen'].forEach(id => { document.getElementById(id).style.display = 'none'; });
   document.getElementById('menuScreen').style.display = 'block';
 }
 
 function startQuiz(mode) {
+  FX.stop();
   currentMode = MODES[mode] ? mode : 'full';
   const cfg = MODES[currentMode];
   const shuffledBank = shuffle(QUESTION_BANK.filter(cfg.pool));
@@ -1678,6 +1843,8 @@ function showResults() {
   document.getElementById('scorePercent').innerText = `${pct}%`;
   document.getElementById('scoreFraction').innerText = `${score} / ${currentQuestions.length}`;
   document.querySelector('#resultsScreen h2').innerText = MODES[currentMode].title;
+  if (pct >= 85) { FX.confetti(); if (pct === 100) FX.fireworks(); }
+  else { FX.sign(); if (pct <= 40) FX.rain(); }
   const badge = document.getElementById('statusBadge');
   const summary = document.getElementById('summaryMessage');
   const rating = document.getElementById('ratingText');
